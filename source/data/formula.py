@@ -9,6 +9,9 @@ class FormulaDecipherException(Exception):
 def letter_val(char):
     return ord(char) - 64
 
+def char_val(intval):
+    return chr(intval + 64)
+
 column_values = {}
 
 def colint(col_text):
@@ -20,6 +23,15 @@ def colint(col_text):
         digit = col_text[length-power-1]
         value += letter_val(digit) * pow(26, power)
     return value - 1
+
+def colval(val):
+    cur_val = val
+    output = ""
+    while cur_val > 0:
+        m = cur_val % 26
+        cur_val -= m
+        output = char_val(m) + output
+    return output
 
 
 class Formula:
@@ -112,15 +124,28 @@ class Formula:
 
     def _get_value_for_cell(self, cell):
         tokens_to_replace = sorted(self.formula_dict.keys(), key=len, reverse=True)
+        tokens = {}
         for token in tokens_to_replace:
             token_vals = self.formula_dict[token](*cell)
             if self.range_dict.get(token, False):
-                print("TOKEN")
+                tokens[token] = self.table.get_cell_range(token_vals[0], token_vals[1])
             else:
-                return self.table.get_cell_value(token_vals[0], token_vals[1])
-            print(token)
-            print(token_vals)
-            pass
+                tokens[token] = self.table.get_cell_value(token_vals[0], token_vals[1])
+
+        token_index = 0
+        local_vars = {}
+        tmp_formula = self.formula
+        for token in tokens:
+            token_index += 1
+            varname = colval(token_index)
+            local_vars[varname] = tokens[token]
+            tmp_formula = tmp_formula.replace(token, varname)
+
+        x = eval(tmp_formula, {}, local_vars)
+        print(x)
+
+
+        return 0
 
     def get_value(self):
         return self._get_value_for_cell((self._origin_row(), self._origin_col()))

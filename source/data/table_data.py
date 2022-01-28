@@ -66,18 +66,33 @@ class TableData:
         self.formulae = {}
 
     def get_cell_value(self, row, col):
+        print("GET CEL VALUE {} {}".format(row, col))
         if self._has_formula(row, col):
             return self.formulae[row][col].get_value()
-        return self.data.at[row, col]
+        return self.data.get(row, {}).get(col, None)
+
+    def get_range(self, start_pos, end_pos):
+        output = pd.Series()
+        rows = sorted(start_pos[0], end_pos[0])
+        cols = sorted(start_pos[1], end_pos[1])
+        for row in range(rows[0], rows[1]+1):
+            for col in range(cols[0], cols[1]+1):
+                val = self.get_cell_value(row, col)
+                pd.append(val)
+        return output
 
     def _has_formula(self, row, col):
         return col in self.formulae.get(row, {})
 
-    def _add_formula(self, row, col, formula):
+    def add_formula(self, row, col, formula):
         new_formula = Formula([row, col], formula, self)
         if row not in self.formulae:
             self.formulae[row] = {}
         self.formulae[row][col] = new_formula
+
+    def set_value(self, row, col, value):
+        self.data.at[row, col] = value
+
 
 
 
