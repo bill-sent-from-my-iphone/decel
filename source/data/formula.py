@@ -142,10 +142,8 @@ class Formula:
             tmp_formula = tmp_formula.replace(token, varname)
 
         x = eval(tmp_formula, {}, local_vars)
-        print(x)
+        return x
 
-
-        return 0
 
     def get_value(self):
         return self._get_value_for_cell((self._origin_row(), self._origin_col()))
