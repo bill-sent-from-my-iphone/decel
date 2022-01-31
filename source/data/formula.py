@@ -33,25 +33,36 @@ def colval(val):
         output = char_val(m) + output
     return output
 
+class IFormula:
 
-class Formula:
-    '''
-        position - [row, col] of formula (eg [1, "AB"])
-        formula - the formula (eg $A:B23:$100)
-    '''
-    def __init__(self, position, formula, table):
-        self.table = table
-        self.formula = formula
-        self.position = position
-        self.formula_dict = {}
-        self.range_dict = {}
-        self._decipher()
+    def __init__(self, cell):
+        self.position = cell
 
     def _origin_row(self):
         return self.position[0]
 
     def _origin_col(self):
         return self.position[1]
+
+
+    def get_value_for_cell(self, row, col):
+        return None
+        
+    def get_value(self):
+        return self.get_value_for_cell((self._origin_row(), self._origin_col()))
+
+class Formula(IFormula):
+    '''
+        position - [row, col] of formula (eg [1, "AB"])
+        formula - the formula (eg $A:B23:$100)
+    '''
+    def __init__(self, cell, formula, table):
+        super().__init__(cell)
+        self.table = table
+        self.formula = formula
+        self.formula_dict = {}
+        self.range_dict = {}
+        self._decipher()
 
     def _decipher(self):
         column_re = r'\$?[A-Z]+'
@@ -122,7 +133,7 @@ class Formula:
         self.formula_dict = f_dict
         self.range_dict = range_dict
 
-    def _get_value_for_cell(self, cell):
+    def get_value_for_cell(self, cell):
         tokens_to_replace = sorted(self.formula_dict.keys(), key=len, reverse=True)
         tokens = {}
         for token in tokens_to_replace:
@@ -144,7 +155,13 @@ class Formula:
         x = eval(tmp_formula, {}, local_vars)
         return x
 
+class ChildFormula(IFormula):
 
-    def get_value(self):
-        return self._get_value_for_cell((self._origin_row(), self._origin_col()))
+    def __init__(self, formula, cell):
+        super().__init__()
+        self.formula = formula
+
+    def get_value_for_cell(row, cell):
+        return self.formula.get_value_for_cell(cell)
+
 

@@ -1,0 +1,135 @@
+import curses
+import pandas as pd
+
+from .utils import fix_text_to_width
+from .colors import CursesColors
+
+class Window:
+
+    """
+        col, row = coordinates of the top left position of the window
+        height, width = self explanatory
+        parent = parent window
+    """
+
+    def __init__(self, col, row, height, width, parent=None, colors=None, defaultchar=' '):
+        self.parent = parent
+        self.changed = []
+        self.children = []
+        self.colors = colors
+        self.col = col
+        self.row = row
+        self.height = height
+        self.width = width
+        self.data = [[(defaultchar, 0) for i in range(width)] for j in range(height)]
+        self.set_all_changed()
+        self.to_delete = False
+
+    def delete(self):
+        self.to_delete = True
+
+    def set_changed(self, row, col):
+        self.changed.append((row, col))
+
+    def update_value(self, row, col, value, modifier):
+        self.data[row][col] = (value, modifier)
+        self.set_changed(row, col)
+
+
+    def draw_box(self, col, row, height, width, modifier=0,
+                    topline='-', bottomline='-', rightline='|', leftline='|',
+                    tl='+', tr='+', bl='+', br='+'):
+        for i in range(1, width-1):
+            self.update_value(row , col + i, topline, modifier)
+            self.update_value(row + height - 1, col + i, bottomline, modifier)
+
+        for i in range(1, height-1):
+            self.update_value(row + i, col, leftline, modifier)
+            self.update_value(row + i, col + width - 1, rightline, modifier)
+
+        self.update_value(row, col, tl, modifier)
+        self.update_value(row, col + width - 1, tr, modifier)
+        self.update_value(row + height - 1, col, bl, modifier)
+        self.update_value(row + height - 1, col + width - 1, br, modifier)
+
+    def draw_button(self, col, row, content, **kwargs):
+        body = ' {} '.format(content)
+        self.draw_box(col, row, 3, len(body) + 2)
+        for i in range(len(body)):
+            self.update_value(row+1, col + i + 1, body[i], kwargs.get('modifier', 0))
+
+    def draw_border(self, modifier=0,
+                    topline='-', bottomline='-', rightline='|', leftline='|',
+                    tl='+', tr='+', bl='+', br='+'):
+        self.draw_box(0, 0, self.height, self.width, modifier=modifier,
+                        topline=topline, bottomline=bottomline, rightline=rightline,
+                        leftline=leftline, tl=tl, tr=tr, bl=bl, br=br)
+
+    def draw_title(self, title, **kwargs):
+        title_lines = fix_text_to_width(title, self.width-2, alignment='c')
+        for r in range(len(title_lines)):
+            line = title_lines[r]
+            for i in range(len(line)):
+                self.update_value(r+1, i+1, line[i], curses.A_BOLD)
+        min_width = min([len(s.rstrip(' ')) for s in title_lines]) + 3
+        self.draw_box(0, 0, 3, min_width, **kwargs)
+
+    def draw_text_box(self, text, row, col, height, width, alignment='l'):
+        lines = fix_text_to_width(text, width, alignment=alignment)
+        for r in range(min(height, len(lines))):
+            line = lines[r]
+            for i in range(len(line)):
+                self.update_value(row + r, col + i, line[i], 0)
+
+    def set_all_changed(self):
+        for r in range(self.height):
+            for c in range(self.width):
+                self.set_changed(r, c)
+
+    def refresh(self, stdscr, force=False, seen_dict=None):
+        if force:
+            self.set_all_changed(self)
+
+        if not seen_dict:
+            seen_dict = {}
+
+        for child in self.children:
+            if child.to_delete:
+                del child
+                continue
+            child.refresh(stdscr, force=force, seen_dict=seen_dict)
+            child.update_parent_indices(seen_dict)
+
+        for coords in self.changed:
+            if not seen_dict.get(coords, False):
+                val, mod = self.get_value(*coords)
+                row, col = self.get_scr_indices(*coords)
+                try:
+                    stdscr.addch(row, col, ord(val), mod)
+                except:
+                    pass
+            self.changed = []
+
+    def get_scr_indices(self, row, col):
+        outRow = self.row + row
+        outCol = self.col + col
+        if self.parent:
+            pr, pc = self.parent.get_scr_indices(0, 0)
+            outRow += pr
+            outCol += pc
+        return (outRow, outCol)
+
+    def update_parent_indices(self, seen):
+        for row in range(self.height):
+            for col in range(self.width):
+                ind = self.get_scr_indices(row, col)
+                if ind  not in seen:
+                    seen[ind] = True
+
+    def get_value(self, row, col):
+        # Needs to include more information; color + modifiers
+        return self.data[row][col]
+
+    def add_child(self, window):
+        self.children.append(window)
+

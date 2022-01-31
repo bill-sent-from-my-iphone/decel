@@ -1,6 +1,8 @@
 import pandas as pd
 
 from data.table_data import TableData
+from view.mainwindow import MainWindow
+from view.popup import Popup
 
 def main():
     df = pd.DataFrame()
@@ -11,6 +13,10 @@ def main():
     td.add_formula(1, "B", "5 * A1 + B2 - 2*C3")
     td.add_formula(2, "C", "5 * A1 + sum(A1:A5)")
     print(td.get_cell_value(2, "C"))
+
+    m = MainWindow()
+    m.add_popup("Warning! Something happened!", "Yo my dood I'm not sure what's going on but")
+    m.loop()
 
 if __name__ == '__main__':
     main()
