@@ -1,6 +1,7 @@
 import pandas as pd
 
 from data.table_data import TableData
+from view.sheet_window import SheetWindow
 from view.mainwindow import MainWindow
 from view.popup import Popup
 
@@ -15,7 +16,6 @@ def main():
     print(td.get_cell_value(2, "C"))
 
     m = MainWindow()
-    m.add_popup("Warning! Something happened!", "Yo my dood I'm not sure what's going on but")
     m.loop()
 
 if __name__ == '__main__':

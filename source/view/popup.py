@@ -20,8 +20,8 @@ class Popup(Window):
                  actions=None, parent=None, colors=None):
         if not actions:
             actions = []
-            actions.append(('O', 'Ok', lambda:None))
-            actions.append(('C', 'Cancel', lambda:None))
+            actions.append(('o', 'Ok', lambda:self.confirm))
+            actions.append(('c', 'Cancel', lambda:self.cancel))
         self.actions = actions
         if not height:
             height = int(parent.height * (0.4))
@@ -35,17 +35,31 @@ class Popup(Window):
         self.message = message
         super().__init__(col, row, height, width, parent=parent, colors=colors)
         self.create_body()
+        self.commands = self.make_commands()
+
+    def make_commands(self):
+        cmds = {}
+        for key, label, action in self.actions:
+            cmds[key] = action
+        return cmds
+
+    def confirm(self):
+        raise Exception("ASDF")
+        self.delete()
+
+    def cancel(self):
+        self.cancel()
 
     def create_body(self):
-        mod = self.colors.get_color_id("Red", "Green")
-        self.draw_border(modifier=mod)
-        self.draw_title(self.title, modifier=mod)
+        mod = self.colors.get_color_id("Red", "White")
+        self.draw_border(title=self.title, modifier=mod)
+        #self.draw_title(self.title, modifier=mod)
 
         button_len = min([12, max([len(i[1]) for i in self.actions])]) + 2
         buttons_per_row = int(self.width / button_len)
 
         top_of_button = self.height - 4
-        button_col = self.width
+        button_col = self.width - 1
 
         for char, body, action in self.actions:
             b_text = body + " ({})".format(char)
@@ -58,6 +72,9 @@ class Popup(Window):
         body_lines = fix_text_to_width(self.message, self.width, alignment='l')
 
         empty_lines = 1
-        #for r in range(len(body_lines))
-
+    
+    def process_char(self, char):
+        cmd = self.commands.get(char, None)
+        if cmd:
+            cmd()
 

@@ -1,11 +1,27 @@
 
 
+# Note: text must be less than width
+def align_text(text, width, alignment='r'):
+    if len(text) >= width:
+        return text[:width]
+    diff = width - len(text)
+    if alignment == 'r':
+        return ' ' * diff + text
+    if alignment == 'l':
+        return text + ' ' * diff
+    if alignment == 'c':
+        l = int(diff / 2)
+        r = diff - l
+        return ' ' * l + text + ' ' * r
+    raise Exception("Invalid Alignment: {}".format(alignment))
+
+    pass
+
 def fix_text_to_width(message, width, alignment='l'):
     lines = []
     words = message.split(' ')
     current_line = ''
     for word in words:
-        print(word)
         diff = width - len(current_line)
         if len(word) + 1 < diff:
             current_line += " {}".format(word)

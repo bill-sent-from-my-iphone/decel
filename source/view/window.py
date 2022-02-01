@@ -12,7 +12,7 @@ class Window:
         parent = parent window
     """
 
-    def __init__(self, col, row, height, width, parent=None, colors=None, defaultchar=' '):
+    def __init__(self, col, row, height, width, parent=None, colors=None, defaultchar=' ', defaultattr=0):
         self.parent = parent
         self.changed = []
         self.children = []
@@ -21,7 +21,7 @@ class Window:
         self.row = row
         self.height = height
         self.width = width
-        self.data = [[(defaultchar, 0) for i in range(width)] for j in range(height)]
+        self.data = [[(defaultchar, defaultattr) for i in range(width)] for j in range(height)]
         self.set_all_changed()
         self.to_delete = False
 
@@ -32,8 +32,10 @@ class Window:
         self.changed.append((row, col))
 
     def update_value(self, row, col, value, modifier):
-        self.data[row][col] = (value, modifier)
-        self.set_changed(row, col)
+        if row < len(self.data):
+            if col < len(self.data[row]):
+                self.data[row][col] = (value, modifier)
+                self.set_changed(row, col)
 
 
     def draw_box(self, col, row, height, width, modifier=0,
@@ -58,21 +60,16 @@ class Window:
         for i in range(len(body)):
             self.update_value(row+1, col + i + 1, body[i], kwargs.get('modifier', 0))
 
-    def draw_border(self, modifier=0,
+    def draw_border(self, modifier=0, title="",
                     topline='-', bottomline='-', rightline='|', leftline='|',
                     tl='+', tr='+', bl='+', br='+'):
         self.draw_box(0, 0, self.height, self.width, modifier=modifier,
                         topline=topline, bottomline=bottomline, rightline=rightline,
                         leftline=leftline, tl=tl, tr=tr, bl=bl, br=br)
-
-    def draw_title(self, title, **kwargs):
-        title_lines = fix_text_to_width(title, self.width-2, alignment='c')
-        for r in range(len(title_lines)):
-            line = title_lines[r]
-            for i in range(len(line)):
-                self.update_value(r+1, i+1, line[i], curses.A_BOLD)
-        min_width = min([len(s.rstrip(' ')) for s in title_lines]) + 3
-        self.draw_box(0, 0, 3, min_width, **kwargs)
+        if title:
+            t = " {} ".format(title)
+            for i in range(len(t)):
+                self.update_value(0, i + 2, t[i], modifier | curses.A_REVERSE)
 
     def draw_text_box(self, text, row, col, height, width, alignment='l'):
         lines = fix_text_to_width(text, width, alignment=alignment)
@@ -86,17 +83,32 @@ class Window:
             for c in range(self.width):
                 self.set_changed(r, c)
 
+    def remove_child(self, child):
+        row = child.row
+        col = child.col
+        width = child.width
+        height = child.height
+        for row in height:
+            for col in width:
+                self.set_changed(row + r, col + c)
+        children.remove(child)
+
+    def prerefresh(self):
+        pass
+
     def refresh(self, stdscr, force=False, seen_dict=None):
+        self.prerefresh()
+        for child in self.children:
+            if child.to_delete:
+                self.remove_child(child)
+
         if force:
             self.set_all_changed(self)
 
         if not seen_dict:
             seen_dict = {}
 
-        for child in self.children:
-            if child.to_delete:
-                del child
-                continue
+        for child in reversed(self.children):
             child.refresh(stdscr, force=force, seen_dict=seen_dict)
             child.update_parent_indices(seen_dict)
 
@@ -132,4 +144,7 @@ class Window:
 
     def add_child(self, window):
         self.children.append(window)
+
+    def process_char(self, char):
+        pass
 
