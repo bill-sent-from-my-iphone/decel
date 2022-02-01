@@ -25,7 +25,7 @@ def colint(col_text):
     return value - 1
 
 def colval(val):
-    cur_val = val
+    cur_val = val + 1
     output = ""
     while cur_val > 0:
         m = cur_val % 26
@@ -141,14 +141,20 @@ class Formula(IFormula):
         self.range_dict = range_dict
 
     def get_value_for_cell(self, cell):
+        row, col = cell
         tokens_to_replace = sorted(self.formula_dict.keys(), key=len, reverse=True)
         tokens = {}
         for token in tokens_to_replace:
-            token_vals = self.formula_dict[token](*cell)
+            row_mod, col_mod = self.formula_dict[token](*cell)
+            new_row = row + row_mod
+            new_col = colval(colint(col) + col_mod)
+            raise Exception(cell, (new_row, new_col), (row_mod, col_mod))
             if self.range_dict.get(token, False):
-                tokens[token] = self.table.get_cell_range(token_vals[0], token_vals[1])
+                tokens[token] = self.table.get_cell_range(row_mod, col_mod)
             else:
-                tokens[token] = self.table.get_cell_value(token_vals[0], token_vals[1])
+                tokens[token] = self.table.get_cell_value(new_row, new_col)
+
+        raise Exception(tokens)
 
         token_index = 0
         local_vars = {}
@@ -160,6 +166,8 @@ class Formula(IFormula):
             tmp_formula = tmp_formula.replace(token, varname)
 
         x = eval(tmp_formula, {}, local_vars)
+        raise Exception(tmp_formula, local_vars)
+        raise Exception(x)
         return x
 
 class ChildFormula(IFormula):

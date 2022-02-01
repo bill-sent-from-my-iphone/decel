@@ -1,7 +1,7 @@
 
 import pandas as pd
 
-from ..formula import Formula, colint
+from ..formula import Formula, colint, colval
 from ..table_data import TableData
 
 def test_colint():
@@ -12,6 +12,12 @@ def test_colint():
     assert colint('BA') == 52
     assert colint('ZADDS') == 11901778
 
+def test_colmods():
+    vals = ['A', 'B', 'A', 'AA', 'BA',  'ZADDS']
+    for v in vals:
+        i = colint(v)
+        assert colval(i) == v
+
 
 def get_basic_table():
     frame = pd.DataFrame()
@@ -19,7 +25,6 @@ def get_basic_table():
         for col in range(30):
             frame.at[row, col] = row + col
     return TableData(dataframe=frame)
-
 
 def test_basic_locked_formula():
     f = Formula([2, 'B'], '$A$1', get_basic_table())
@@ -43,7 +48,6 @@ def test_addition_formula():
     td.add_formula(2, "C", "5 * A1 + sum(A1:A5)")
     assert td.get_cell_value(1, "B") == 4
     assert td.get_cell_value(2, "C") == 10
-
 
 
 

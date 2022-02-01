@@ -29,15 +29,7 @@ class MainWindow(Window):
         return self.active_window
 
     def create_sheet(self):
-        df = pd.DataFrame()
-        for i in range(5):
-            for j in range(10):
-                df.at[i, j] = 1.0
-        td = TableData(dataframe=df)
-        #td.add_formula(1, "B", "5 * A1 + B2 - 2*C3")
-        #td.add_formula(2, "C", "5 * A1 + sum(A1:A5)")
-
-        self.sheet = SheetWindow(0, 0, self.height, self.width, colors=self.colors, table=td)
+        self.sheet = SheetWindow(0, 0, self.height, self.width, colors=self.colors)
         self.add_child(self.sheet)
         pass
 

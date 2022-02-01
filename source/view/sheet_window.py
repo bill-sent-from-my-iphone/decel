@@ -21,10 +21,11 @@ class SheetWindow(Window):
     I_TYPE_CMD = "/"
 
     def __init__(self, *args, **kwargs):
-        self.default_col_width = 8
+        self.default_col_width = 9
         self.default_row_height = 1
-        self.table = kwargs.get('table')
-        del kwargs['table']
+        self.table = kwargs.get('table', TableData())
+        if 'table' in kwargs:
+            del kwargs['table']
         super().__init__(*args, **kwargs)
         self.column_widths = {}
         self.row_heights = {}
@@ -81,8 +82,7 @@ class SheetWindow(Window):
         if body_len > width - 1:
             body = body[:width - 3] + ".."
         else:
-            body = align_text(body, width)
-
+            body = align_text(body, width, alignment=alignment)
 
         body += '|'
 
@@ -130,7 +130,7 @@ class SheetWindow(Window):
         row_color = self.colors.get_color_id("Blue", "White")
         for r in range(self.c_height):
             cur_row = self.current_row + r
-            self.draw_cell_inner(str(cur_row), self.c_row + r + 1, 0, 1, width, alignment='l',
+            self.draw_cell_inner(str(cur_row), self.c_row + r + 1, 0, 1, width, alignment='r',
                                  mod=row_color, selected=False)
 
     def draw_column(self, column, offset=None):
@@ -147,7 +147,7 @@ class SheetWindow(Window):
 
         current_visual_row = 0
         col_label_color = self.colors.get_color_id("Cyan", "Black")
-        self.draw_cell_inner(colval(column+1), self.c_row, offset + self.c_col, 1, col_width,
+        self.draw_cell_inner(colval(column), self.c_row, offset + self.c_col, 1, col_width,
                              alignment='c', mod=col_label_color)
 
         for r in range(self.current_row, self.current_row + cur_row):
@@ -156,10 +156,6 @@ class SheetWindow(Window):
             row_height = self.get_row_height(r)
             R = self.c_row + current_visual_row + 1
             cell_args = { 'alignment' : 'r' }
-
-            if ( (r == 5) and (column==5) and value is not None):
-                #value = self.table.get_cell_value(column, r, f=True)
-                raise Exception(value)
 
             mod = 0
             selected = False
@@ -225,15 +221,15 @@ class SheetWindow(Window):
 
     def enter_value_into_cell(self):
         val = self.current_input
+        r, c = self.active_cell
+        col = colval(c)
         if has_tokens(val):
             # Here the row is correct, but the col is off by one
-            r, c = self.active_cell
-            col = colval(c + 1)
             self.table.add_formula(r, col, val)
+            raise Exception(self.table.formulae[1]['A'].get_value())
         else:
             value = eval(val)
-            r, c = self.active_cell
-            self.table.set_value(r, c, value)
+            self.table.set_value(r, col, value)
 
     def process_input_char(self, charval):
         if charval == BACKSPACE:

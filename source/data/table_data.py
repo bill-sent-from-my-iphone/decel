@@ -64,9 +64,8 @@ class TableData:
         self.formulae = {}
 
     def get_cell_value(self, row, col, f=False):
-        if f:
-            raise Exception(self.formulae)
         if self._has_formula(row, col):
+            raise Exception("FORM")
             return self.formulae[row][col].get_value()
         return self.data.get(row, {}).get(col, None)
 
@@ -82,6 +81,7 @@ class TableData:
 
     def _has_formula(self, row, col):
         if row in self.formulae:
+            raise Exception(self.formulae)
             return col in self.formulae[row]
         return False
 
