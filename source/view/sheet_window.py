@@ -85,14 +85,15 @@ class SheetWindow(Window):
 
     def get_row_label_offset(self):
         cur_row = str(self.current_row)
-        return len(cur_row) + 3
+        return len(cur_row) + 2
 
     def draw_row_labels(self):
         width = self.get_row_label_offset()
+        row_color = self.colors.get_color_id("Blue", "White")
         for r in range(self.c_height):
             cur_row = self.current_row + r
             self.draw_cell_inner(str(cur_row), self.c_row + r + 1, 0, 1, width, alignment='l',
-                                 mod=0, selected=False)
+                                 mod=row_color, selected=False)
 
     def draw_column(self, column, offset=None):
         if offset is None:
@@ -107,8 +108,9 @@ class SheetWindow(Window):
         col_width = self.get_column_width(column)
 
         current_visual_row = 0
+        col_label_color = self.colors.get_color_id("Cyan", "Black")
         self.draw_cell_inner(colval(column+1), self.c_row, offset + self.c_col, 1, col_width,
-                             alignment='c', mod=0)
+                             alignment='c', mod=col_label_color)
 
         for r in range(self.current_row, self.current_row + cur_row):
             value = self.table.get_cell_value(r, column)
