@@ -57,7 +57,7 @@ class SheetWindow(Window):
             m = mod
             if mod | curses.A_UNDERLINE:
                 m |= curses.A_UNDERLINE
-            if selected:
+            if selected and i != len(body) - 1:
                 m |= curses.A_REVERSE
             self.update_value_body(row, col + i, body[i], m)
 
@@ -75,18 +75,30 @@ class SheetWindow(Window):
         return offset
 
     def draw_page(self):
-        offset = 0
+        offset = self.get_row_label_offset()
         cur_col = self.current_col
+        self.draw_row_labels()
         while offset < self.width:
             self.draw_column(cur_col, offset=offset)
             offset += self.get_column_width(self.current_col) + 1
             cur_col += 1
 
+    def get_row_label_offset(self):
+        cur_row = str(self.current_row)
+        return len(cur_row) + 3
+
+    def draw_row_labels(self):
+        width = self.get_row_label_offset()
+        for r in range(self.c_height):
+            cur_row = self.current_row + r
+            self.draw_cell_inner(str(cur_row), self.c_row + r + 1, 0, 1, width, alignment='l',
+                                 mod=0, selected=False)
+
     def draw_column(self, column, offset=None):
         if offset is None:
             offset = self.get_column_offset(column)
 
-        num_rows = 0
+        num_rows = 1
         cur_row = self.current_row
         while num_rows < self.c_height:
             num_rows += self.get_row_height(cur_row)
@@ -95,10 +107,13 @@ class SheetWindow(Window):
         col_width = self.get_column_width(column)
 
         current_visual_row = 0
+        self.draw_cell_inner(colval(column+1), self.c_row, offset + self.c_col, 1, col_width,
+                             alignment='c', mod=0)
+
         for r in range(self.current_row, self.current_row + cur_row):
             value = self.table.get_cell_value(r, column)
             row_height = self.get_row_height(r)
-            R = self.c_row + current_visual_row
+            R = self.c_row + current_visual_row + 1
             cell_args = { 'alignment' : 'r' }
 
             mod = 0
