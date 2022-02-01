@@ -51,6 +51,17 @@ class IFormula:
     def get_value(self):
         return self.get_value_for_cell((self._origin_row(), self._origin_col()))
 
+
+column_re = r'\$?[A-Z]+'
+row_re = r'\$?[0-9]+'
+cell_re = column_re + row_re
+token_re = cell_re + '(?::' + cell_re + ')?'
+
+
+def has_tokens(value):
+    ms = re.findall(token_re, value)
+    return len(ms) > 0
+
 class Formula(IFormula):
     '''
         position - [row, col] of formula (eg [1, "AB"])
@@ -65,10 +76,6 @@ class Formula(IFormula):
         self._decipher()
 
     def _decipher(self):
-        column_re = r'\$?[A-Z]+'
-        row_re = r'\$?[0-9]+'
-        cell_re = column_re + row_re
-        token_re = cell_re + '(?::' + cell_re + ')?'
         tokens = re.findall(token_re, self.formula)
         self._load_dict(tokens)
 
@@ -148,7 +155,7 @@ class Formula(IFormula):
         tmp_formula = self.formula
         for token in tokens:
             token_index += 1
-            varname = colval(token_index)
+            varname = "DECEL_VAR_" + colval(token_index)
             local_vars[varname] = tokens[token]
             tmp_formula = tmp_formula.replace(token, varname)
 

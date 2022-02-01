@@ -3,8 +3,6 @@ import pandas as pd;
 
 from .formula import Formula
 
-
-
 def read_token(token):
     row_lock = False
     col_lock = False
@@ -65,7 +63,9 @@ class TableData:
             self.data = dataframe
         self.formulae = {}
 
-    def get_cell_value(self, row, col):
+    def get_cell_value(self, row, col, f=False):
+        if f:
+            raise Exception(self.formulae)
         if self._has_formula(row, col):
             return self.formulae[row][col].get_value()
         return self.data.get(row, {}).get(col, None)
@@ -81,13 +81,17 @@ class TableData:
         return output
 
     def _has_formula(self, row, col):
-        return col in self.formulae.get(row, {})
+        if row in self.formulae:
+            return col in self.formulae[row]
+        return False
 
     def add_formula(self, row, col, formula):
         new_formula = Formula([row, col], formula, self)
         if row not in self.formulae:
             self.formulae[row] = {}
         self.formulae[row][col] = new_formula
+        val = new_formula.get_value()
+        self.set_value(row, col, val)
 
     def set_value(self, row, col, value):
         self.data.at[row, col] = value

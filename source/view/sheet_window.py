@@ -1,16 +1,29 @@
 import curses
+import numpy as np
 
 from .utils import fix_text_to_width, align_text
 from .window import Window
 from data.table_data import TableData
-from data.formula import colint, colval
+from data.formula import colint, colval, has_tokens
+
+
+CTRL_J = 10
+CTRL_K = 11
+CTRL_L = 12
+CTRL_H = 263
+ENTER = CTRL_J
+BACKSPACE = 127
+
 
 class SheetWindow(Window):
+
+    I_TYPE_ENTRY = "="
+    I_TYPE_CMD = "/"
 
     def __init__(self, *args, **kwargs):
         self.default_col_width = 8
         self.default_row_height = 1
-        self.table = kwargs.get('table', TableData())
+        self.table = kwargs.get('table')
         del kwargs['table']
         super().__init__(*args, **kwargs)
         self.column_widths = {}
@@ -23,7 +36,22 @@ class SheetWindow(Window):
         self.c_width = self.width - 2
         self.c_height = self.height - 2
         self.cursor = (0, 0)
+        self.active_cell = (0, 0)
+        self.input_active = False
+        self.current_input = ''
+        self.current_input_type = SheetWindow.I_TYPE_ENTRY
+        self.entry_color = self.colors.get_color_id("Black", "Green")
         self.draw_page()
+
+    def set_input_active(self, input_type):
+        self.input_active = True
+        self.current_input_type = input_type
+        self.active_cell = self.cursor
+
+    def close_input(self):
+        self.input_active = False
+        self.current_input = ""
+        self.cursor = self.active_cell
 
     def get_column_width(self, col):
         if col in self.column_widths:
@@ -39,17 +67,22 @@ class SheetWindow(Window):
                         alignment='r', mod=0, selected=False):
         body = ''
         if isinstance(content, float):
-            body = '{:.3f}'.format(content)
+            body = '{:.5f}'.format(content)
+            body = body.rstrip('0').rstrip('.')
         elif content is None:
             body = ''
         else:
             body = str(content)
+
+        if body == "nan":
+            body = ''
 
         body_len = len(body)
         if body_len > width - 1:
             body = body[:width - 3] + ".."
         else:
             body = align_text(body, width)
+
 
         body += '|'
 
@@ -75,6 +108,11 @@ class SheetWindow(Window):
         return offset
 
     def draw_page(self):
+        self.draw_sheet()
+        if self.input_active:
+            self.draw_entry()
+
+    def draw_sheet(self):
         offset = self.get_row_label_offset()
         cur_col = self.current_col
         self.draw_row_labels()
@@ -84,7 +122,7 @@ class SheetWindow(Window):
             cur_col += 1
 
     def get_row_label_offset(self):
-        cur_row = str(self.current_row)
+        cur_row = str(self.current_row + self.c_height)
         return len(cur_row) + 2
 
     def draw_row_labels(self):
@@ -113,10 +151,15 @@ class SheetWindow(Window):
                              alignment='c', mod=col_label_color)
 
         for r in range(self.current_row, self.current_row + cur_row):
-            value = self.table.get_cell_value(r, column)
+            colname = colval(column)
+            value = self.table.get_cell_value(colname, r)
             row_height = self.get_row_height(r)
             R = self.c_row + current_visual_row + 1
             cell_args = { 'alignment' : 'r' }
+
+            if ( (r == 5) and (column==5) and value is not None):
+                #value = self.table.get_cell_value(column, r, f=True)
+                raise Exception(value)
 
             mod = 0
             selected = False
@@ -127,10 +170,19 @@ class SheetWindow(Window):
 
             current_visual_row += row_height
 
-    def draw_cell(self, row, col):
-        val = self.table.get_cell_value(row, col)
-        raise Exception(val)
-        pass
+    def draw_entry(self):
+        self.draw_box(self.c_col, self.c_height-2, 3, self.c_width, fill=' ')
+
+        beginning = " > "
+        if self.current_input_type == SheetWindow.I_TYPE_ENTRY:
+            beginning = " = "
+        if self.current_input_type == SheetWindow.I_TYPE_CMD:
+            beginning = " = "
+
+        text_to_draw = beginning + self.current_input
+        if len(text_to_draw) > self.c_width - 2:
+            text_to_draw = beginning + ".." + self.current_input[-(self.c_width-7):]
+        self.draw_text(text_to_draw, self.c_height - 1, self.c_row + 1, self.entry_color)
 
     def prerefresh(self):
         '''
@@ -146,7 +198,15 @@ class SheetWindow(Window):
             newr = 0
         if newc < 0:
             newc = 0
-        self.cursor = (newr, newc)
+        self.update_cursor((newr, newc))
+
+    def update_cursor(self, new_cursor):
+        self.cursor = new_cursor
+        row, col = new_cursor
+        if row < self.current_row:
+            self.current_row = row
+        if col < self.current_col:
+            self.current_col = col
 
     def vertical_scroll(self, amount=1):
         new_amount = self.current_row + amount
@@ -160,24 +220,66 @@ class SheetWindow(Window):
             new_amount = 0
         self.current_col = new_amount
 
+    def enter_cell_input(self):
+        self.set_input_active(SheetWindow.I_TYPE_ENTRY)
+
+    def enter_value_into_cell(self):
+        val = self.current_input
+        if has_tokens(val):
+            # Here the row is correct, but the col is off by one
+            r, c = self.active_cell
+            col = colval(c + 1)
+            self.table.add_formula(r, col, val)
+        else:
+            value = eval(val)
+            r, c = self.active_cell
+            self.table.set_value(r, c, value)
+
+    def process_input_char(self, charval):
+        if charval == BACKSPACE:
+            self.current_input = self.current_input[:-1]
+        elif charval == ENTER:
+            ctype = self.current_input_type
+            if ctype == SheetWindow.I_TYPE_ENTRY:
+                self.enter_value_into_cell()
+            self.close_input()
+        else:
+            self.current_input += chr(charval)
+
     def process_char(self, char):
-        if char == 10: # ctrl J
-            self.vertical_scroll(1)
-        if char == 11: # ctrl K
-            self.vertical_scroll(-1)
-        if char == 12: # ctrl L
-            self.horizontal_scroll(1)
-        if char == 263: # ctrl H
-            self.horizontal_scroll(-1)
-        if char == ord('j'):
-            self.move_cursor(1, 0)
-        if char == ord('k'):
-            self.move_cursor(-1, 0)
-        if char == ord('l'):
-            self.move_cursor(0, 1)
-        if char == ord('h'):
-            self.move_cursor(0, -1)
-        pass
+        if self.input_active:
+            self.process_input_char(char)
+        else:
+            if char == ord('='):
+                self.enter_cell_input()
+            if char == CTRL_J:
+                self.vertical_scroll(1)
+            if char == CTRL_K:
+                self.vertical_scroll(-1)
+            if char == CTRL_L:
+                self.horizontal_scroll(1)
+            if char == CTRL_H:
+                self.horizontal_scroll(-1)
+
+        ## MOVEMENT ##
+            if char == ord('j'):
+                self.move_cursor(1, 0)
+            if char == ord('k'):
+                self.move_cursor(-1, 0)
+            if char == ord('l'):
+                self.move_cursor(0, 1)
+            if char == ord('h'):
+                self.move_cursor(0, -1)
+
+            if char == ord('J'):
+                self.move_cursor(5, 0)
+            if char == ord('K'):
+                self.move_cursor(-5, 0)
+            if char == ord('L'):
+                self.move_cursor(0, 3)
+            if char == ord('H'):
+                self.move_cursor(0, -3)
+            pass
         self.draw_page()
 
 

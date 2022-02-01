@@ -40,7 +40,7 @@ class Window:
 
     def draw_box(self, col, row, height, width, modifier=0,
                     topline='-', bottomline='-', rightline='|', leftline='|',
-                    tl='+', tr='+', bl='+', br='+'):
+                    tl='+', tr='+', bl='+', br='+', fill=''):
         for i in range(1, width-1):
             self.update_value(row , col + i, topline, modifier)
             self.update_value(row + height - 1, col + i, bottomline, modifier)
@@ -53,6 +53,11 @@ class Window:
         self.update_value(row, col + width - 1, tr, modifier)
         self.update_value(row + height - 1, col, bl, modifier)
         self.update_value(row + height - 1, col + width - 1, br, modifier)
+
+        if fill:
+            for r in range(row+1, row+height - 1):
+                for c in range(col+1, col + width - 1):
+                    self.update_value(r, c, fill, modifier)
 
     def draw_button(self, col, row, content, **kwargs):
         body = ' {} '.format(content)
@@ -70,6 +75,10 @@ class Window:
             t = " {} ".format(title)
             for i in range(len(t)):
                 self.update_value(0, i + 2, t[i], modifier | curses.A_REVERSE)
+
+    def draw_text(self, text, row, col, mod):
+        for i in range(len(text)):
+            self.update_value(row, col+i, text[i], mod)
 
     def draw_text_box(self, text, row, col, height, width, alignment='l'):
         lines = fix_text_to_width(text, width, alignment=alignment)
