@@ -224,9 +224,7 @@ class SheetWindow(Window):
         r, c = self.active_cell
         col = colval(c)
         if has_tokens(val):
-            # Here the row is correct, but the col is off by one
             self.table.add_formula(r, col, val)
-            raise Exception(self.table.formulae[1]['A'].get_value())
         else:
             value = eval(val)
             self.table.set_value(r, col, value)

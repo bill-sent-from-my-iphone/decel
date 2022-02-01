@@ -44,7 +44,6 @@ class IFormula:
     def _origin_col(self):
         return self.position[1]
 
-
     def get_value_for_cell(self, row, col):
         return None
         
@@ -96,7 +95,7 @@ class Formula(IFormula):
         if col is None: # not split
             col_re = r'[A-Z]+'
             col = re.match(col_re, token).group()
-            row = token[len(col):]
+            row = int(token[len(col):])
 
         if col is None or row is None:
             raise FormulaDecipherToken(token)
@@ -104,10 +103,17 @@ class Formula(IFormula):
         get_row = None
         get_col = None
 
+        ls = (row_lock, col_lock)
+        p = (row, col)
+
         if row_lock:
             get_row = lambda r_in: row
         else:
-            get_row = lambda r_in: r_in + (row - self._origin_row())
+            def calc_row(r_in):
+                diff = row - self._origin_row()
+                out = r_in + (row - self._origin_row())
+                return out
+            get_row = calc_row
 
         if col_lock:
             get_col = lambda c_in: colint(col)
@@ -115,8 +121,6 @@ class Formula(IFormula):
             get_col = lambda c_in: colint(c_in) + (colint(col) - colint(self._origin_col()))
 
         # Remove 1 because display is 1 index but data is 0
-        row = int(row) - 1
-
         return lambda R, C: (get_row(R), get_col(C))
 
     def _generate_token_formula(self, token):
@@ -145,16 +149,12 @@ class Formula(IFormula):
         tokens_to_replace = sorted(self.formula_dict.keys(), key=len, reverse=True)
         tokens = {}
         for token in tokens_to_replace:
-            row_mod, col_mod = self.formula_dict[token](*cell)
-            new_row = row + row_mod
-            new_col = colval(colint(col) + col_mod)
-            raise Exception(cell, (new_row, new_col), (row_mod, col_mod))
+            a, b = self.formula_dict[token](*cell)
             if self.range_dict.get(token, False):
-                tokens[token] = self.table.get_cell_range(row_mod, col_mod)
+                tokens[token] = self.table.get_cell_range(a, b)
             else:
-                tokens[token] = self.table.get_cell_value(new_row, new_col)
-
-        raise Exception(tokens)
+                t_col = colval(b)
+                tokens[token] = self.table.get_cell_value(t_col, a)
 
         token_index = 0
         local_vars = {}
@@ -166,8 +166,6 @@ class Formula(IFormula):
             tmp_formula = tmp_formula.replace(token, varname)
 
         x = eval(tmp_formula, {}, local_vars)
-        raise Exception(tmp_formula, local_vars)
-        raise Exception(x)
         return x
 
 class ChildFormula(IFormula):
