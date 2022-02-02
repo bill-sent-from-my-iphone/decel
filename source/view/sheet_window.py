@@ -8,6 +8,8 @@ from data.table_data import TableData
 from data.formula import colint, colval, has_tokens
 
 
+CTRL_A = 1
+CTRL_E = 5
 CTRL_F = 6
 CTRL_J = 10
 CTRL_K = 11
@@ -16,6 +18,10 @@ CTRL_H = 263
 ENTER = CTRL_J
 BACKSPACE = 127
 ESCAPE = 27
+LEFT = 260
+RIGHT = 261
+UP = 259
+DOWN = 258
 
 def in_range_inc(s, e, v):
     return v >= s and v <= e
@@ -28,6 +34,32 @@ def in_range_2d(st, et, point):
     row, col = point
     col = colint(col)
     return in_range_inc(min_r, max_r, row) and in_range_inc(min_c, max_c, col)
+
+def swap_vertical(active, anchor, value):
+    down = value > 0
+    r1, c1 = active
+    r2, c2 = anchor
+
+    if down:
+        if r1 < r2:
+            return (r2, c1), (r1, c2)
+    else:
+        if r1 > r2:
+            return (r2, c1), (r1, c2)
+    return active, anchor
+
+def swap_horizontal(active, anchor, value):
+    right = value > 0
+    r1, c1 = active
+    r2, c2 = anchor
+
+    if right:
+        if c1 < c2:
+            return (r1, c2), (r2, c1)
+    else:
+        if c1 > c2:
+            return (r1, c2), (r2, c1)
+    return active, anchor
 
 class SheetWindow(Window):
 
@@ -53,13 +85,19 @@ class SheetWindow(Window):
         self.c_width = self.width - 2
         self.c_height = self.height - 2
         self.cursor = (0, 0)
-        self.select_start = None
+        self.select_anchor = None
         self.active_cell = (0, 0)
         self.input_active = False
         self.current_input = ''
+        self.text_cursor = 0
         self.current_input_type = SheetWindow.I_TYPE_DISPLAY
         self.entry_color = self.colors.get_color_id("Black", "Green")
+        self.grabbing = False
+        self.grab_movement = []
         self.draw_page()
+
+        ## DEBUG
+        self.wait_for_key = False
 
     def set_input_active(self, input_type):
         self.input_active = True
@@ -176,10 +214,10 @@ class SheetWindow(Window):
         for r in range(self.current_row, self.current_row + cur_row):
             mod = 0
             colname = colval(column)
-            if self.select_start:
-                if in_range_2d(self.select_start, self.cursor, (r, colname)):
+            if self.select_anchor:
+                if in_range_2d(self.select_anchor, self.cursor, (r, colname)):
                     mod = self.colors.get_color_id('Green', 'Blue')
-                sr, sc = self.select_start
+                sr, sc = self.select_anchor
             value = self.table.get_cell_value(colname, r)
             row_height = self.get_row_height(r)
             R = self.c_row + current_visual_row + 1
@@ -215,7 +253,8 @@ class SheetWindow(Window):
         return strval + " (str)"
 
     def draw_entry(self):
-        self.draw_box(self.c_col, self.c_height-2, 3, self.c_width, fill=' ')
+        input_line = self.c_height
+        self.draw_box(self.c_col, input_line-1, 3, self.c_width, fill=' ')
 
         beginning = " {} ".format(self.current_input_type)
         text_to_draw = beginning
@@ -225,7 +264,7 @@ class SheetWindow(Window):
             text_to_draw += self.current_input
             if len(text_to_draw) > self.c_width - 2:
                 text_to_draw = beginning + ".." + self.current_input[-(self.c_width-7):]
-        self.draw_text(text_to_draw, self.c_height - 1, self.c_row + 1, self.entry_color)
+        self.draw_text(text_to_draw, input_line, self.c_row + 1, self.entry_color)
 
     def prerefresh(self):
         '''
@@ -233,7 +272,19 @@ class SheetWindow(Window):
         '''
         pass
 
-    def move_cursor(self, rchange, cchange):
+    def expand_grab_vertical(self, amount):
+        active, anchor = swap_vertical(self.cursor, self.select_anchor, amount)
+        self.cursor = active
+        self.select_anchor = anchor
+        self._move_cursor_inner(amount, 0)
+
+    def expand_grab_horizontal(self, amount):
+        active, anchor = swap_horizontal(self.cursor, self.select_anchor, amount)
+        self.cursor = active
+        self.select_anchor = anchor
+        self._move_cursor_inner(0, amount)
+
+    def _move_cursor_inner(self, rchange, cchange):
         r, c = self.cursor
         newr = r + rchange
         newc = c + cchange
@@ -242,6 +293,16 @@ class SheetWindow(Window):
         if newc < 0:
             newc = 0
         self.update_cursor((newr, newc))
+
+
+    def move_cursor(self, rchange, cchange):
+        if self.grabbing:
+            if rchange:
+                self.expand_grab_vertical(rchange)
+            elif cchange:
+                self.expand_grab_horizontal(cchange)
+        else:
+            self._move_cursor_inner(rchange, cchange)
 
     def update_cursor(self, new_cursor):
         self.cursor = new_cursor
@@ -278,14 +339,31 @@ class SheetWindow(Window):
         self.table.set_string_value(r, c, val)
 
     def enter_cmd(self):
-        command = self.current_input
+        pass
 
     def process_input_char(self, charval):
         ctype = self.current_input_type
+        
+        inp = self.current_input
+        cursor_pos = self.text_cursor
+        pre_cursor = inp[:cursor_pos]
+        post_cursor = inp[cursor_pos:]
+
         if charval == ESCAPE:
             self.cancel_input()
-        if charval == BACKSPACE:
-            self.current_input = self.current_input[:-1]
+        elif charval == LEFT:
+            ncursor = cursor_pos - 1
+            if ncursor >= 0:
+                self.text_cursor = ncursor
+        elif charval == RIGHT:
+            ncursor = cursor_pos + 1
+            if ncursor <= len(self.current_input):
+                self.text_cursor = ncursor
+            pass
+        elif charval == BACKSPACE:
+            pre_cursor = pre_cursor[:-1]
+            self.text_cursor -= 1
+            self.current_input = pre_cursor + post_cursor
         elif charval == ENTER:
             if ctype == SheetWindow.I_TYPE_ENTRY:
                 self.enter_value_into_cell()
@@ -296,9 +374,26 @@ class SheetWindow(Window):
             # Find
             pass
         else:
-            self.current_input += chr(charval)
+            self.current_input = pre_cursor + chr(charval) + post_cursor
+            self.text_cursor += 1
+
+    def register_grab_movement(
+
+    # Grab and drag values to easily expand formulae
+    def start_grab(self):
+        if not self.select_anchor:
+            self.start_select()
+        self.grabbing = True
+        self.grab_movement = []
+
+    def start_select(self):
+        self.select_anchor = self.cursor
 
     def process_char(self, char):
+        if self.wait_for_key:
+            raise Exception(char)
+        if char == ord('!'):
+            self.wait_for_key = True
         if self.input_active:
             self.process_input_char(char)
         else:
@@ -317,10 +412,13 @@ class SheetWindow(Window):
 
         ## SELECTION ##
             if char == ord('v'):
-                self.select_start = self.cursor
+                self.start_select()
             if char == ESCAPE:
-                if self.select_start:
-                    self.select_start = None
+                if self.select_anchor:
+                    self.select_anchor = None
+
+            if char == ord('g'):
+                self.start_grab()
 
         ## MOVEMENT ##
             if char == ord('j'):
