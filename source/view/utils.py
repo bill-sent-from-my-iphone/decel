@@ -39,3 +39,9 @@ def fix_text_to_width(message, width, alignment='l'):
     if current_line:
         lines.append(current_line)
     return lines
+
+def min_max(*vals):
+    mn = min(vals)
+    mx = max(vals)
+    return (mn, mx)
+

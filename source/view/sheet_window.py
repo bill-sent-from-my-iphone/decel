@@ -2,7 +2,7 @@ import curses
 import numpy as np
 import pandas as pd
 
-from .utils import fix_text_to_width, align_text
+from .utils import fix_text_to_width, align_text, min_max
 from .window import Window
 from data.table_data import TableData
 from data.formula import colint, colval, has_tokens
@@ -17,6 +17,17 @@ ENTER = CTRL_J
 BACKSPACE = 127
 ESCAPE = 27
 
+def in_range_inc(s, e, v):
+    return v >= s and v <= e
+
+def in_range_2d(st, et, point):
+    r1, c1 = st
+    r2, c2 = et
+    min_r, max_r = min_max(r1, r2)
+    min_c, max_c = min_max(c1, c2)
+    row, col = point
+    col = colint(col)
+    return in_range_inc(min_r, max_r, row) and in_range_inc(min_c, max_c, col)
 
 class SheetWindow(Window):
 
@@ -42,6 +53,7 @@ class SheetWindow(Window):
         self.c_width = self.width - 2
         self.c_height = self.height - 2
         self.cursor = (0, 0)
+        self.select_start = None
         self.active_cell = (0, 0)
         self.input_active = False
         self.current_input = ''
@@ -159,14 +171,20 @@ class SheetWindow(Window):
         self.draw_cell_inner(colval(column), self.c_row, offset + self.c_col, 1, col_width,
                              alignment='c', mod=col_label_color)
 
+        in_select = False
+
         for r in range(self.current_row, self.current_row + cur_row):
+            mod = 0
             colname = colval(column)
+            if self.select_start:
+                if in_range_2d(self.select_start, self.cursor, (r, colname)):
+                    mod = self.colors.get_color_id('Green', 'Blue')
+                sr, sc = self.select_start
             value = self.table.get_cell_value(colname, r)
             row_height = self.get_row_height(r)
             R = self.c_row + current_visual_row + 1
             cell_args = { 'alignment' : 'r' }
 
-            mod = 0
             selected = False
             if r == self.cursor[0] and column == self.cursor[1]:
                 selected = True
@@ -296,6 +314,13 @@ class SheetWindow(Window):
                 self.horizontal_scroll(1)
             if char == CTRL_H:
                 self.horizontal_scroll(-1)
+
+        ## SELECTION ##
+            if char == ord('v'):
+                self.select_start = self.cursor
+            if char == ESCAPE:
+                if self.select_start:
+                    self.select_start = None
 
         ## MOVEMENT ##
             if char == ord('j'):
