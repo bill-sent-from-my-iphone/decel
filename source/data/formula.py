@@ -209,7 +209,13 @@ class Formula(IFormula):
             varname = "DECEL_VAR_" + colval(token_index)
             local_vars[varname] = tokens[token]
             tmp_formula = tmp_formula.replace(token, varname)
-        x = eval(tmp_formula, {}, local_vars)
+        try:
+            x = eval(tmp_formula, {}, local_vars)
+        except:
+            v = local_vars['DECEL_VAR_B'][2]
+            v = float(v)
+            raise Exception(type(v))
+            raise Exception(tmp_formula, local_vars)
         return x
 
 class ChildFormula(IFormula):

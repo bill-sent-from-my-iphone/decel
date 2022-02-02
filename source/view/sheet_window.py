@@ -1,5 +1,6 @@
 import curses
 import numpy as np
+import pandas as pd
 
 from .utils import fix_text_to_width, align_text
 from .window import Window
@@ -7,19 +8,21 @@ from data.table_data import TableData
 from data.formula import colint, colval, has_tokens
 
 
+CTRL_F = 6
 CTRL_J = 10
 CTRL_K = 11
 CTRL_L = 12
 CTRL_H = 263
 ENTER = CTRL_J
 BACKSPACE = 127
+ESCAPE = 27
 
 
 class SheetWindow(Window):
 
     I_TYPE_DISPLAY = "@"
     I_TYPE_ENTRY = "="
-    I_TYPE_CMD = "/"
+    I_TYPE_CMD = ":"
 
     def __init__(self, *args, **kwargs):
         self.default_col_width = 9
@@ -177,16 +180,21 @@ class SheetWindow(Window):
         row, col = (r, colval(c))
         formula = self.table.get_formula(row, col)
         if formula:
-            return formula.get_display_formula()
+            return formula.get_display_formula() + " (formula)"
         r, c = self.cursor
         v = self.table.get_cell_value(colval(c), r)
         if v is None:
             return ""
         if isinstance(v, float):
+            if pd.isna(v):
+                return ""
             out = str(v)
             out = out.rstrip('0').rstrip('.')
-            return out
-        return str(v)
+            return out + " (float)"
+        strval = str(v)
+        if len(strval) == 0:
+            return ""
+        return strval + " (str)"
 
     def draw_entry(self):
         self.draw_box(self.c_col, self.c_height-2, 3, self.c_width, fill=' ')
@@ -240,19 +248,35 @@ class SheetWindow(Window):
     def enter_cell_input(self):
         self.set_input_active(SheetWindow.I_TYPE_ENTRY)
 
+    def enter_cmd_input(self):
+        self.set_input_active(SheetWindow.I_TYPE_CMD)
+
+    def cancel_input(self):
+        self.close_input()
+
     def enter_value_into_cell(self):
         val = self.current_input
         r, c = self.active_cell
         self.table.set_string_value(r, c, val)
 
+    def enter_cmd(self):
+        command = self.current_input
+
     def process_input_char(self, charval):
+        ctype = self.current_input_type
+        if charval == ESCAPE:
+            self.cancel_input()
         if charval == BACKSPACE:
             self.current_input = self.current_input[:-1]
         elif charval == ENTER:
-            ctype = self.current_input_type
             if ctype == SheetWindow.I_TYPE_ENTRY:
                 self.enter_value_into_cell()
+            if ctype == SheetWindow.I_TYPE_CMD:
+                self.enter_cmd()
             self.close_input()
+        elif ctype == SheetWindow.I_TYPE_ENTRY and charval == CTRL_F:
+            # Find
+            pass
         else:
             self.current_input += chr(charval)
 
@@ -262,6 +286,8 @@ class SheetWindow(Window):
         else:
             if char == ord('='):
                 self.enter_cell_input()
+            if char == ord(':'):
+                self.enter_cmd_input()
             if char == CTRL_J:
                 self.vertical_scroll(1)
             if char == CTRL_K:

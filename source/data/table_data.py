@@ -5,6 +5,8 @@ import csv
 
 from .formula import Formula, colval, has_tokens
 
+unnamed_col = r'Unnamed: [0-9]+'
+
 def read_token(token):
     row_lock = False
     col_lock = False
@@ -47,7 +49,7 @@ class TableData:
         self.formulae = {}
         self.dependencies = {}
 
-    def get_cell_value(self, row, col, f=False):
+    def get_cell_value(self, row, col):
         if self._has_formula(row, col):
             return self.formulae[row][col].get_value()
         return self.data.get(row, {}).get(col, None)
@@ -118,13 +120,20 @@ class TableData:
         self.token_changed((row, col))
 
     def set_string_value(self, r, c, val):
+        val = val.strip(' ')
         col = colval(c)
         if has_tokens(val):
             self.add_formula(r, col, val)
         else:
             try:
                 value = eval(val)
-                self.set_value(r, col, value)
+                if val == '31':
+                    raise Exception(value)
+                try:
+                    v = float(value)
+                    self.set_value(r, col, v)
+                except:
+                    self.set_value(r, col, value)
             except:
                 self.set_value(r, col, val)
 
@@ -135,19 +144,32 @@ class TableData:
     def load_csv(self, filepath):
         body = []
 
-        self.clear_data()
-        df = pd.DataFrame()
-        self.data = df
-        with open(filepath) as csvfile:
-            content = csv.reader(csvfile, delimiter=' ', quotechar='|')
-            b = ""
-            for row in content:
-                body.append(row)
-        num_cols = max([len(r) for r in body])
-        for row_ind in range(len(body)):
-            row = body[row_ind]
-            for col  in range(len(row)):
-                value = row[col].rstrip(',')
-                self.set_string_value(row_ind, col, value)
+        new_df = pd.DataFrame()
+        csv_df = pd.read_csv(filepath)
+        p_cols = csv_df.columns
 
+        self.clear_data()
+        self.data = new_df
+        for i in range(len(p_cols)):
+            csv_col = p_cols[i]
+            col_name = colval(i)
+
+            csv_col_name = csv_col
+            if re.match(unnamed_col, csv_col_name):
+                csv_col_name = ''
+            new_df.at[0, col_name] = csv_col_name
+            for r in range(len(csv_df)):
+                raw_val = csv_df.at[r, csv_col]
+                if pd.isna(raw_val):
+                    self.set_value(r+1, i, None)
+                    #self.set_string_value(r+1, i, "")
+                else:
+                    v = str(raw_val).strip(' ')
+                    self.set_string_value(r+1, i, v)
+
+        self.data.to_csv('new_file.csv', header=None, index=None)
+
+    def save_csv(self, filepath):
+        # need to add check to verify path if file exists
+        pass
 
