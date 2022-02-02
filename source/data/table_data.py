@@ -1,7 +1,9 @@
 import re
+import os
 import pandas as pd;
+import csv
 
-from .formula import Formula, colval
+from .formula import Formula, colval, has_tokens
 
 def read_token(token):
     row_lock = False
@@ -22,30 +24,6 @@ def read_token(token):
     row = int(m.group(0))
     return row, row_lock, col, col_lock
 
-class TableCell:
-
-    def __init__(self, value=None):
-        self._value = value;
-        self.needs_refresh = True
-
-    def refresh(self):
-        self.needs_refresh = False
-
-    @property
-    def value(self):
-        if (self.needs_refresh):
-            self.refresh()
-        return self._value
-
-    def set_value(self, new_value):
-        self._value = new_value
-
-    def set_needs_update(self):
-        self.needs_refresh = True
-
-    def read_formla(self, formula):
-        pass
-
 class TableData:
     '''
         This will contain data for a given row
@@ -61,6 +39,11 @@ class TableData:
             self.data = pd.DataFrame()
         else:
             self.data = dataframe
+        self.formulae = {}
+        self.dependencies = {}
+
+    def clear_data(self):
+        self.data = pd.DataFrame()
         self.formulae = {}
         self.dependencies = {}
 
@@ -134,10 +117,37 @@ class TableData:
         self.add_dependencies(new_formula)
         self.token_changed((row, col))
 
+    def set_string_value(self, r, c, val):
+        col = colval(c)
+        if has_tokens(val):
+            self.add_formula(r, col, val)
+        else:
+            try:
+                value = eval(val)
+                self.set_value(r, col, value)
+            except:
+                self.set_value(r, col, val)
+
     def set_value(self, row, col, value):
         self.data.at[row, col] = value
         self.token_changed((row, col))
 
+    def load_csv(self, filepath):
+        body = []
 
+        self.clear_data()
+        df = pd.DataFrame()
+        self.data = df
+        with open(filepath) as csvfile:
+            content = csv.reader(csvfile, delimiter=' ', quotechar='|')
+            b = ""
+            for row in content:
+                body.append(row)
+        num_cols = max([len(r) for r in body])
+        for row_ind in range(len(body)):
+            row = body[row_ind]
+            for col  in range(len(row)):
+                value = row[col].rstrip(',')
+                self.set_string_value(row_ind, col, value)
 
 

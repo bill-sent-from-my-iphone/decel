@@ -28,6 +28,7 @@ class SheetWindow(Window):
         if 'table' in kwargs:
             del kwargs['table']
         super().__init__(*args, **kwargs)
+        self.table.load_csv('example_file.csv')
         self.column_widths = {}
         self.row_heights = {}
         self.draw_border(title='Decel')
@@ -242,15 +243,7 @@ class SheetWindow(Window):
     def enter_value_into_cell(self):
         val = self.current_input
         r, c = self.active_cell
-        col = colval(c)
-        if has_tokens(val):
-            self.table.add_formula(r, col, val)
-        else:
-            try:
-                value = eval(val)
-                self.table.set_value(r, col, value)
-            except:
-                self.table.set_value(r, col, val)
+        self.table.set_string_value(r, c, val)
 
     def process_input_char(self, charval):
         if charval == BACKSPACE:
