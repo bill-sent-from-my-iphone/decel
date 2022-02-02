@@ -246,8 +246,11 @@ class SheetWindow(Window):
         if has_tokens(val):
             self.table.add_formula(r, col, val)
         else:
-            value = eval(val)
-            self.table.set_value(r, col, value)
+            try:
+                value = eval(val)
+                self.table.set_value(r, col, value)
+            except:
+                self.table.set_value(r, col, val)
 
     def process_input_char(self, charval):
         if charval == BACKSPACE:

@@ -64,6 +64,7 @@ class MainWindow(Window):
                 self.terminate()
                 break
             if (ch == ord('p')):
+                continue
                 self.add_popup("Warning! Something happened!", "Yo my dood I'm not sure what's going on but")
 
 
