@@ -56,6 +56,9 @@ class IFormula:
     def get_value(self):
         return self.get_value_for_cell((self._origin_row(), self._origin_col()))
 
+    def get_display_formula(self):
+        return ""
+
 
 column_re = r'\$?[A-Z]+'
 row_re = r'\$?[0-9]+'
@@ -79,6 +82,9 @@ class Formula(IFormula):
         self.formula_dict = {}
         self.range_dict = {}
         self._decipher()
+
+    def get_display_formula(self):
+        return self.formula
 
     def _decipher(self):
         tokens = re.findall(token_re, self.formula)
@@ -163,12 +169,32 @@ class Formula(IFormula):
                 tokens[token] = self.table.get_cell_value(t_col, a)
         return tokens
 
+    def iterate_range(self, cellA, cellB):
+        r1, c1 = split_token(cellA)
+        r2, c2 = split_token(cellB)
+        rows = [r1, r2]
+        cols = [colint(c1), colint(c2)]
+        rowmin = min(rows)
+        rowmax = max(rows)
+        colmin = min(cols)
+        colmax = max(cols)
+        output = []
+        for r in range(rowmin, rowmax+1):
+            for c in range(colmin, colmax+1):
+                col = colval(c)
+                output.append((r, col))
+        return output
+
     def get_dependent_tokens(self):
-        tokens = self._get_dependent_tokens(self.position).keys()
+        tokens = self._get_dependent_tokens(self.position)
         output = []
         for t in tokens:
-            row, col = split_token(t)
-            output.append((row, col))
+            if ':' in t:
+                t1, t2 = t.split(':')
+                output.extend(self.iterate_range(t1, t2))
+            else:
+                row, col = split_token(t)
+                output.append((row, col))
         return output
 
     def get_value_for_cell(self, cell):
@@ -183,7 +209,6 @@ class Formula(IFormula):
             varname = "DECEL_VAR_" + colval(token_index)
             local_vars[varname] = tokens[token]
             tmp_formula = tmp_formula.replace(token, varname)
-
         x = eval(tmp_formula, {}, local_vars)
         return x
 

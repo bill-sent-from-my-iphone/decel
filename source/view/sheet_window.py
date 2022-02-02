@@ -17,6 +17,7 @@ BACKSPACE = 127
 
 class SheetWindow(Window):
 
+    I_TYPE_DISPLAY = "@"
     I_TYPE_ENTRY = "="
     I_TYPE_CMD = "/"
 
@@ -40,7 +41,7 @@ class SheetWindow(Window):
         self.active_cell = (0, 0)
         self.input_active = False
         self.current_input = ''
-        self.current_input_type = SheetWindow.I_TYPE_ENTRY
+        self.current_input_type = SheetWindow.I_TYPE_DISPLAY
         self.entry_color = self.colors.get_color_id("Black", "Green")
         self.draw_page()
 
@@ -50,6 +51,7 @@ class SheetWindow(Window):
         self.active_cell = self.cursor
 
     def close_input(self):
+        self.current_input_type = SheetWindow.I_TYPE_DISPLAY
         self.input_active = False
         self.current_input = ""
         self.cursor = self.active_cell
@@ -107,10 +109,13 @@ class SheetWindow(Window):
             offset += self.get_column_width(col)
         return offset
 
+    def get_current_cell(self):
+        r, c = self.cursor
+        return (r, colval(c))
+
     def draw_page(self):
         self.draw_sheet()
-        if self.input_active:
-            self.draw_entry()
+        self.draw_entry()
 
     def draw_sheet(self):
         offset = self.get_row_label_offset()
@@ -166,18 +171,33 @@ class SheetWindow(Window):
 
             current_visual_row += row_height
 
+    def entry_display_value(self):
+        r, c = self.cursor
+        row, col = (r, colval(c))
+        formula = self.table.get_formula(row, col)
+        if formula:
+            return formula.get_display_formula()
+        r, c = self.cursor
+        v = self.table.get_cell_value(colval(c), r)
+        if v is None:
+            return ""
+        if isinstance(v, float):
+            out = str(v)
+            out = out.rstrip('0').rstrip('.')
+            return out
+        return str(v)
+
     def draw_entry(self):
         self.draw_box(self.c_col, self.c_height-2, 3, self.c_width, fill=' ')
 
-        beginning = " > "
-        if self.current_input_type == SheetWindow.I_TYPE_ENTRY:
-            beginning = " = "
-        if self.current_input_type == SheetWindow.I_TYPE_CMD:
-            beginning = " = "
-
-        text_to_draw = beginning + self.current_input
-        if len(text_to_draw) > self.c_width - 2:
-            text_to_draw = beginning + ".." + self.current_input[-(self.c_width-7):]
+        beginning = " {} ".format(self.current_input_type)
+        text_to_draw = beginning
+        if self.current_input_type == SheetWindow.I_TYPE_DISPLAY:
+            text_to_draw += self.entry_display_value()
+        else:
+            text_to_draw += self.current_input
+            if len(text_to_draw) > self.c_width - 2:
+                text_to_draw = beginning + ".." + self.current_input[-(self.c_width-7):]
         self.draw_text(text_to_draw, self.c_height - 1, self.c_row + 1, self.entry_color)
 
     def prerefresh(self):

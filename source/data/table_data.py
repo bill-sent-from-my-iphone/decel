@@ -1,7 +1,7 @@
 import re
 import pandas as pd;
 
-from .formula import Formula
+from .formula import Formula, colval
 
 def read_token(token):
     row_lock = False
@@ -66,7 +66,6 @@ class TableData:
 
     def get_cell_value(self, row, col, f=False):
         if self._has_formula(row, col):
-            raise Exception("FORM")
             return self.formulae[row][col].get_value()
         return self.data.get(row, {}).get(col, None)
 
@@ -76,9 +75,14 @@ class TableData:
         cols = sorted([start_pos[1], end_pos[1]])
         for row in range(rows[0], rows[1]+1):
             for col in range(cols[0], cols[1]+1):
-                val = self.get_cell_value(row, col)
+                val = self.get_cell_value(colval(col), row)
                 output.append(val)
         return output
+
+    def get_formula(self, row, col):
+        if self._has_formula(row, col):
+            return self.formulae[row][col]
+        return None
 
     def _has_formula(self, row, col):
         if row in self.formulae:
@@ -101,6 +105,9 @@ class TableData:
         f_pos = formula.position
         for token in tokens:
             self.add_dependency(token, f_pos)
+
+    def get_dependencies(self, row, col):
+        return self.dependencies.get((row, col), {}).keys()
 
     def token_changed(self, cell):
         # TODO: Optimize this.
