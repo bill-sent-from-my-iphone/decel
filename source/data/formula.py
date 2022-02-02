@@ -12,6 +12,12 @@ def letter_val(char):
 def char_val(intval):
     return chr(intval + 64)
 
+letter_re = r'[A-Z]+'
+def split_token(token):
+    col = re.match(letter_re, token).group()
+    row = token[len(col):]
+    return (int(row), col)
+
 column_values = {}
 
 def colint(col_text):
@@ -144,7 +150,7 @@ class Formula(IFormula):
         self.formula_dict = f_dict
         self.range_dict = range_dict
 
-    def get_value_for_cell(self, cell):
+    def _get_dependent_tokens(self, cell):
         row, col = cell
         tokens_to_replace = sorted(self.formula_dict.keys(), key=len, reverse=True)
         tokens = {}
@@ -155,6 +161,19 @@ class Formula(IFormula):
             else:
                 t_col = colval(b)
                 tokens[token] = self.table.get_cell_value(t_col, a)
+        return tokens
+
+    def get_dependent_tokens(self):
+        tokens = self._get_dependent_tokens(self.position).keys()
+        output = []
+        for t in tokens:
+            row, col = split_token(t)
+            output.append((row, col))
+        return output
+
+    def get_value_for_cell(self, cell):
+        row, col = cell
+        tokens = self._get_dependent_tokens(cell)
 
         token_index = 0
         local_vars = {}

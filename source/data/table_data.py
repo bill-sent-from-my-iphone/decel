@@ -62,6 +62,7 @@ class TableData:
         else:
             self.data = dataframe
         self.formulae = {}
+        self.dependencies = {}
 
     def get_cell_value(self, row, col, f=False):
         if self._has_formula(row, col):
@@ -81,20 +82,54 @@ class TableData:
 
     def _has_formula(self, row, col):
         if row in self.formulae:
-            raise Exception(self.formulae)
             return col in self.formulae[row]
         return False
 
+    def update_value(self, row, col):
+        if self._has_formula(row, col):
+            val = self.formulae[row][col].get_value()
+            self.data.at[row, col] = val
+
+
+    def add_dependency(self, lead_token, dependent_token):
+        if lead_token not in self.dependencies:
+            self.dependencies[lead_token] = {}
+        self.dependencies[lead_token][dependent_token] = True
+
+    def add_dependencies(self, formula):
+        tokens = formula.get_dependent_tokens()
+        f_pos = formula.position
+        for token in tokens:
+            self.add_dependency(token, f_pos)
+
+    def token_changed(self, cell):
+        # TODO: Optimize this.
+        # Look at which tokens have more/fewer dependencies and don't
+        # duplicate cells that are dependent on something that is going to change
+        # anyway
+        # eg: A0 = 1
+        #     A1 = A0
+        #     A2 = A0 + A1
+        # If the user updates A0, we would want to update A1 first, because updating
+        # A2 would calculate it with a false A1, then when A1 changes it would be
+        # recalculated
+
+        for d_row, d_col in self.dependencies.get(cell, {}):
+            self.update_value(d_row, d_col)
+
     def add_formula(self, row, col, formula):
-        new_formula = Formula([row, col], formula, self)
+        new_formula = Formula((row, col), formula, self)
         if row not in self.formulae:
             self.formulae[row] = {}
         self.formulae[row][col] = new_formula
         val = new_formula.get_value()
         self.set_value(row, col, val)
+        self.add_dependencies(new_formula)
+        self.token_changed((row, col))
 
     def set_value(self, row, col, value):
         self.data.at[row, col] = value
+        self.token_changed((row, col))
 
 
 
