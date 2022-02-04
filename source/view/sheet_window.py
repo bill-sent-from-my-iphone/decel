@@ -61,6 +61,13 @@ def swap_horizontal(active, anchor, value):
             return (r1, c2), (r2, c1)
     return active, anchor
 
+def normalize_anchor(active, anchor):
+    if active[0] < anchor[0]:
+        active, anchor = swap_vertical(active, anchor, 1)
+    if active[1] < anchor[1]:
+        active, anchor = swap_horizontal(active, anchor, 1)
+    return active, anchor
+
 class SheetWindow(Window):
 
     I_TYPE_DISPLAY = "@"
@@ -181,13 +188,13 @@ class SheetWindow(Window):
             return self.num_viewable_columns
         self.last_column = self.current_col
         cur_col = self.current_col
-        cur_offset = 0
+        cur_offset = 1
         num_cols = 0
         while cur_offset < self.c_width:
             cur_offset += self.get_column_width(cur_col) + 1
             cur_col += 1
             num_cols += 1
-        self.num_viewable_columns = num_cols
+        self.num_viewable_columns = num_cols - 1
         return num_cols
 
     def draw_sheet(self):
@@ -318,12 +325,25 @@ class SheetWindow(Window):
         self._move_cursor_inner(rchange, cchange)
 
     def update_cursor(self, new_cursor):
+        orow, ocol = self.cursor
         self.cursor = new_cursor
         row, col = new_cursor
         if row < self.current_row:
             self.current_row = row
         if col < self.current_col:
             self.current_col = col
+
+        max_cols = self.get_num_viewable_columns() - 1
+        max_rows = self.c_height - 4
+
+        rdiff = row - self.current_row
+        if rdiff >= max_rows:
+            self.current_row += rdiff - max_rows
+
+        cdiff = col - self.current_col
+        if cdiff >= max_cols:
+            self.current_col += cdiff - max_cols
+
 
     def vertical_scroll(self, amount=1):
         new_amount = self.current_row + amount
@@ -398,7 +418,28 @@ class SheetWindow(Window):
         self.grabbing = True
 
     def end_grab(self):
-        pass
+        (bottom_row, right_col), (top_row, left_col) = normalize_anchor(*self.grab_start)
+        cur_row, cur_col = self.cursor
+
+        if cur_col > right_col:
+            cols = cur_col - right_col
+            for r in range(top_row, bottom_row + 1):
+                for c in range(cols):
+                    src_col = right_col + c
+                    dst_col = src_col + 1
+                    form = self.table.get_formula(r, colval(src_col))
+                    if form:
+                        formula = form.make_child((r, colval(dst_col)))
+                        self.table.add_formula(r, colval(dst_col), formula)
+                    else:
+                        v = self.table.get_cell_value(colval(src_col), r)
+                        self.table.set_value(r, colval(dst_col), v)
+        self.grabbing = False
+        self.grab_start = None
+        self.end_select()
+
+    def end_select(self):
+        self.select_anchor = None
 
     def start_select(self):
         self.select_anchor = self.cursor
@@ -411,6 +452,10 @@ class SheetWindow(Window):
         if self.input_active:
             self.process_input_char(char)
         else:
+            if self.grabbing and char == ENTER:
+                self.end_grab()
+                self.draw_page()
+                return
             if char == ord('='):
                 self.enter_cell_input()
             if char == ord(':'):
@@ -429,9 +474,9 @@ class SheetWindow(Window):
                 self.start_select()
             if char == ESCAPE:
                 if self.select_anchor:
-                    self.select_anchor = None
+                    self.end_select()
 
-            if char == ord('g'):
+            if char == ord('g') and not self.grabbing:
                 self.start_grab()
 
         ## MOVEMENT ##

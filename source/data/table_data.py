@@ -109,8 +109,11 @@ class TableData:
         for d_row, d_col in self.dependencies.get(cell, {}):
             self.update_value(d_row, d_col)
 
-    def add_formula(self, row, col, formula):
+    def make_formula(self, row, col, formula):
         new_formula = Formula((row, col), formula, self)
+        self.add_formula(row, col, new_formula)
+
+    def add_formula(self, row, col, new_formula):
         if row not in self.formulae:
             self.formulae[row] = {}
         self.formulae[row][col] = new_formula
@@ -123,12 +126,10 @@ class TableData:
         val = val.strip(' ')
         col = colval(c)
         if has_tokens(val):
-            self.add_formula(r, col, val)
+            self.make_formula(r, col, val)
         else:
             try:
                 value = eval(val)
-                if val == '31':
-                    raise Exception(value)
                 try:
                     v = float(value)
                     self.set_value(r, col, v)

@@ -58,7 +58,7 @@ class IFormula:
     def _origin_col(self):
         return self.position[1]
 
-    def get_value_for_cell(self, row, col):
+    def get_value_for_cell(self, cell):
         return None
         
     def get_value(self):
@@ -67,12 +67,41 @@ class IFormula:
     def get_display_formula(self):
         return ""
 
+    def get_dependent_tokens(self):
+        tokens = self._get_dependent_tokens(self.position)
+        output = []
+        for t in tokens:
+            if ':' in t:
+                t1, t2 = t.split(':')
+                output.extend(self.iterate_range(t1, t2))
+            else:
+                row, col = split_token(t)
+                output.append((row, col))
+        return output
+
+    def make_child(self, cell):
+        child = ChildFormula(self, cell)
+        return child
+
+
 
 column_re = r'\$?[A-Z]+'
 row_re = r'\$?[0-9]+'
 cell_re = column_re + row_re
 token_re = cell_re + '(?::' + cell_re + ')?'
 
+
+class ChildFormula(IFormula):
+
+    def __init__(self, parent, cell):
+        super().__init__(cell)
+        self.parent = parent
+
+    def get_value_for_cell(self, cell):
+        return self.parent.get_value_for_cell(cell)
+
+    def _get_dependent_tokens(self, cell):
+        return self.parent._get_dependent_tokens(self.position)
 
 def has_tokens(value):
     ms = re.findall(token_re, value)
@@ -193,18 +222,6 @@ class Formula(IFormula):
                 output.append((r, col))
         return output
 
-    def get_dependent_tokens(self):
-        tokens = self._get_dependent_tokens(self.position)
-        output = []
-        for t in tokens:
-            if ':' in t:
-                t1, t2 = t.split(':')
-                output.extend(self.iterate_range(t1, t2))
-            else:
-                row, col = split_token(t)
-                output.append((row, col))
-        return output
-
     def get_value_for_cell(self, cell):
         row, col = cell
         tokens = self._get_dependent_tokens(cell)
@@ -225,14 +242,5 @@ class Formula(IFormula):
             raise Exception(type(v))
             raise Exception(tmp_formula, local_vars)
         return x
-
-class ChildFormula(IFormula):
-
-    def __init__(self, formula, cell):
-        super().__init__()
-        self.formula = formula
-
-    def get_value_for_cell(row, cell):
-        return self.formula.get_value_for_cell(cell)
 
 colval(26)
