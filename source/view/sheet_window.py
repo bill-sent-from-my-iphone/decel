@@ -1,6 +1,7 @@
 import curses
 import numpy as np
 import pandas as pd
+import re
 
 from .utils import fix_text_to_width, align_text, min_max
 from .window import Window
@@ -73,6 +74,7 @@ class SheetWindow(Window):
     I_TYPE_DISPLAY = "@"
     I_TYPE_ENTRY = "="
     I_TYPE_CMD = ":"
+    I_TYPE_MOVE = ">"
 
     def __init__(self, *args, **kwargs):
         self.default_col_width = 9
@@ -117,10 +119,11 @@ class SheetWindow(Window):
         self.active_cell = self.cursor
 
     def close_input(self):
+        if self.current_input_type == SheetWindow.I_TYPE_ENTRY:
+            self.cursor = self.active_cell
         self.current_input_type = SheetWindow.I_TYPE_DISPLAY
         self.input_active = False
         self.current_input = ""
-        self.cursor = self.active_cell
 
     def get_column_width(self, col):
         if col in self.column_widths:
@@ -363,6 +366,9 @@ class SheetWindow(Window):
     def enter_cmd_input(self):
         self.set_input_active(SheetWindow.I_TYPE_CMD)
 
+    def enter_move_input(self):
+        self.set_input_active(SheetWindow.I_TYPE_MOVE)
+
     def cancel_input(self):
         self.close_input()
 
@@ -370,6 +376,17 @@ class SheetWindow(Window):
         val = self.current_input
         r, c = self.active_cell
         self.table.set_string_value(r, c, val)
+
+    def enter_movement_input(self):
+        inp = self.current_input
+        r, c = self.cursor
+        row = re.findall(r'[0-9]+', inp)
+        if row:
+            r = int(row[0])
+        col = re.findall(r'[a-zA-Z]+', inp)
+        if col:
+            c = colint(col[0].upper())
+        self.update_cursor((r, c))
 
     def enter_cmd(self):
         pass
@@ -402,6 +419,8 @@ class SheetWindow(Window):
                 self.enter_value_into_cell()
             if ctype == SheetWindow.I_TYPE_CMD:
                 self.enter_cmd()
+            if ctype == SheetWindow.I_TYPE_MOVE:
+                self.enter_movement_input()
             self.close_input()
         elif ctype == SheetWindow.I_TYPE_ENTRY and charval == CTRL_F:
             # Find
@@ -524,6 +543,8 @@ class SheetWindow(Window):
                 self.start_grab()
 
         ## MOVEMENT ##
+            if char == ord('m'):
+                self.enter_move_input()
             if char == ord('j'):
                 self.move_cursor(1, 0)
             if char == ord('k'):
