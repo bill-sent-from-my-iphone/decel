@@ -105,6 +105,7 @@ class SheetWindow(Window):
         self.grab_start = None
         self.grab_movement = []
         self.grabbing = False
+        self.current_motion = ''
 
         self.last_column = 0
         self.num_viewable_columns = 0
@@ -507,6 +508,13 @@ class SheetWindow(Window):
     def start_select(self):
         self.select_anchor = self.cursor
 
+    def get_motion_size(self, base_val=1):
+        if not self.current_motion:
+            return base_val
+        out = int(self.current_motion) * base_val
+        self.current_motion = ''
+        return out
+
     def process_char(self, char):
         if self.wait_for_key:
             raise Exception(char)
@@ -532,12 +540,19 @@ class SheetWindow(Window):
             if char == CTRL_H:
                 self.horizontal_scroll(-1)
 
+            if chr(char) in '0123456789':
+                self.current_motion += chr(char)
+
         ## SELECTION ##
             if char == ord('v'):
                 self.start_select()
             if char == ESCAPE:
                 if self.select_anchor:
                     self.end_select()
+                if self.current_motion:
+                    self.current_motion = ''
+                if self.grabbing:
+                    self.grabbing = False
 
             if char == ord('g') and not self.grabbing:
                 self.start_grab()
@@ -546,13 +561,17 @@ class SheetWindow(Window):
             if char == ord('m'):
                 self.enter_move_input()
             if char == ord('j'):
-                self.move_cursor(1, 0)
+                s = self.get_motion_size()
+                self.move_cursor(s, 0)
             if char == ord('k'):
-                self.move_cursor(-1, 0)
+                s = self.get_motion_size()
+                self.move_cursor(-s, 0)
             if char == ord('l'):
-                self.move_cursor(0, 1)
+                s = self.get_motion_size()
+                self.move_cursor(0, s)
             if char == ord('h'):
-                self.move_cursor(0, -1)
+                s = self.get_motion_size()
+                self.move_cursor(0, -s)
 
             if char == ord('J'):
                 self.move_cursor(5, 0)
