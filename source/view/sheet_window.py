@@ -148,7 +148,7 @@ class SheetWindow(Window):
 
         body_len = len(body)
         if body_len > width - 1:
-            body = body[:width - 3] + ".."
+            body = body[:width - 2] + ".."
         else:
             body = align_text(body, width, alignment=alignment)
 
