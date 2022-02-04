@@ -30,7 +30,7 @@ def colint(col_text):
         value += letter_val(digit) * pow(26, power)
     return value - 1
 
-def colval(val):
+def ocolval(val):
     cur_val = val + 1
     output = ""
     while cur_val > 0:
@@ -38,6 +38,14 @@ def colval(val):
         cur_val -= m
         output = char_val(m) + output
     return output
+
+def colval(num):
+    numeric = num  % 26
+    letter = chr(65 + numeric)
+    num2 = int(num / 26)
+    if num2 > 0:
+        return colval(num2 - 1) + letter
+    return letter
 
 class IFormula:
 
@@ -227,4 +235,4 @@ class ChildFormula(IFormula):
     def get_value_for_cell(row, cell):
         return self.formula.get_value_for_cell(cell)
 
-
+colval(26)

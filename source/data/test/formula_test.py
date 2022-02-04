@@ -13,7 +13,7 @@ def test_colint():
     assert colint('ZADDS') == 11901778
 
 def test_colmods():
-    vals = ['A', 'B', 'A', 'AA', 'BA',  'ZADDS']
+    vals = ['A', 'B', 'A', 'Y', 'Z', 'AA', 'X', 'AA', 'BA',  'ZADDS']
     for v in vals:
         i = colint(v)
         assert colval(i) == v

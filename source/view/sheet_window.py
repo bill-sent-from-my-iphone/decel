@@ -86,16 +86,21 @@ class SheetWindow(Window):
         self.c_height = self.height - 2
         self.cursor = (0, 0)
         self.select_anchor = None
+        self.grab_anchor = None
         self.active_cell = (0, 0)
         self.input_active = False
         self.current_input = ''
         self.text_cursor = 0
         self.current_input_type = SheetWindow.I_TYPE_DISPLAY
         self.entry_color = self.colors.get_color_id("Black", "Green")
-        self.grabbing = False
+        self.grab_start = None
         self.grab_movement = []
-        self.draw_page()
+        self.grabbing = False
 
+        self.last_column = 0
+        self.num_viewable_columns = 0
+
+        self.draw_page()
         ## DEBUG
         self.wait_for_key = False
 
@@ -171,13 +176,28 @@ class SheetWindow(Window):
         self.draw_sheet()
         self.draw_entry()
 
+    def get_num_viewable_columns(self):
+        if self.last_column == self.current_col and self.num_viewable_columns != 0:
+            return self.num_viewable_columns
+        self.last_column = self.current_col
+        cur_col = self.current_col
+        cur_offset = 0
+        num_cols = 0
+        while cur_offset < self.c_width:
+            cur_offset += self.get_column_width(cur_col) + 1
+            cur_col += 1
+            num_cols += 1
+        self.num_viewable_columns = num_cols
+        return num_cols
+
     def draw_sheet(self):
         offset = self.get_row_label_offset()
         cur_col = self.current_col
         self.draw_row_labels()
-        while offset < self.width:
+        cols = self.get_num_viewable_columns()
+        for i in range(cols):
             self.draw_column(cur_col, offset=offset)
-            offset += self.get_column_width(self.current_col) + 1
+            offset += self.get_column_width(cur_col) + 1
             cur_col += 1
 
     def get_row_label_offset(self):
@@ -186,7 +206,7 @@ class SheetWindow(Window):
 
     def draw_row_labels(self):
         width = self.get_row_label_offset()
-        row_color = self.colors.get_color_id("Blue", "White")
+        row_color = self.colors.get_color_id("Yellow", "Black")
         for r in range(self.c_height):
             cur_row = self.current_row + r
             self.draw_cell_inner(str(cur_row), self.c_row + r + 1, 0, 1, width, alignment='r',
@@ -294,15 +314,8 @@ class SheetWindow(Window):
             newc = 0
         self.update_cursor((newr, newc))
 
-
     def move_cursor(self, rchange, cchange):
-        if self.grabbing:
-            if rchange:
-                self.expand_grab_vertical(rchange)
-            elif cchange:
-                self.expand_grab_horizontal(cchange)
-        else:
-            self._move_cursor_inner(rchange, cchange)
+        self._move_cursor_inner(rchange, cchange)
 
     def update_cursor(self, new_cursor):
         self.cursor = new_cursor
@@ -377,14 +390,15 @@ class SheetWindow(Window):
             self.current_input = pre_cursor + chr(charval) + post_cursor
             self.text_cursor += 1
 
-    def register_grab_movement(
-
     # Grab and drag values to easily expand formulae
     def start_grab(self):
         if not self.select_anchor:
             self.start_select()
+        self.grab_start = (self.cursor, self.select_anchor)
         self.grabbing = True
-        self.grab_movement = []
+
+    def end_grab(self):
+        pass
 
     def start_select(self):
         self.select_anchor = self.cursor
