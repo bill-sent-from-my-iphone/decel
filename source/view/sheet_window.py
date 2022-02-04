@@ -410,6 +410,17 @@ class SheetWindow(Window):
             self.current_input = pre_cursor + chr(charval) + post_cursor
             self.text_cursor += 1
 
+    def transfer_cell(self, start, dest):
+        sr, sc = start
+        dr, dc = dest
+        form = self.table.get_formula(sr, sc)
+        if form:
+            formula = form.make_child(dest)
+            self.table.add_formula(dr, dc, formula)
+        else:
+            v = self.table.get_cell_value(sc, sr)
+            self.table.set_value(dr, dc, v)
+
     # Grab and drag values to easily expand formulae
     def start_grab(self):
         if not self.select_anchor:
@@ -427,13 +438,46 @@ class SheetWindow(Window):
                 for c in range(cols):
                     src_col = right_col + c
                     dst_col = src_col + 1
-                    form = self.table.get_formula(r, colval(src_col))
-                    if form:
-                        formula = form.make_child((r, colval(dst_col)))
-                        self.table.add_formula(r, colval(dst_col), formula)
-                    else:
-                        v = self.table.get_cell_value(colval(src_col), r)
-                        self.table.set_value(r, colval(dst_col), v)
+                    source = (r, colval(src_col))
+                    dest = (r, colval(dst_col))
+                    self.transfer_cell(source, dest)
+            right_col = cur_col
+
+        if cur_col < left_col:
+            cols = left_col - cur_col
+            for r in range(top_row, bottom_row + 1):
+                for c in range(cols):
+                    src_col = left_col - c
+                    dst_col = src_col - 1
+                    source = (r, colval(src_col))
+                    dest = (r, colval(dst_col))
+                    self.transfer_cell(source, dest)
+            left_col = cur_col
+
+        # Modify Cols
+
+        if cur_row > bottom_row:
+            rows = cur_row - bottom_row
+            for c in range(left_col, right_col + 1):
+                column = colval(c)
+                for r in range(rows):
+                    src_row = bottom_row + r
+                    dst_row = src_row + 1
+                    source = (src_row, column)
+                    dest = (dst_row, column)
+                    self.transfer_cell(source, dest)
+
+        if cur_row < top_row:
+            rows = bottom_row - cur_row
+            for c in range(left_col, right_col + 1):
+                column = colval(c)
+                for r in range(rows):
+                    src_row = top_row - r
+                    dst_row = src_row - 1
+                    source = (src_row, column)
+                    dest = (dst_row, column)
+                    self.transfer_cell(source, dest)
+
         self.grabbing = False
         self.grab_start = None
         self.end_select()
