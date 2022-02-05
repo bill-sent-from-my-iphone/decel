@@ -83,7 +83,7 @@ class SheetWindow(Window):
         if 'table' in kwargs:
             del kwargs['table']
         super().__init__(*args, **kwargs)
-        self.table.load_csv('example_file.csv')
+        #self.table.load_csv('example_file.csv')
         self.column_widths = {}
         self.row_heights = {}
         self.draw_border(title='Decel')
@@ -527,7 +527,7 @@ class SheetWindow(Window):
                 self.end_grab()
                 self.draw_page()
                 return
-            if char == ord('='):
+            if char == ord('i'):
                 self.enter_cell_input()
             if char == ord(':'):
                 self.enter_cmd_input()

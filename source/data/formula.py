@@ -103,6 +103,7 @@ class ChildFormula(IFormula):
     def _get_dependent_tokens(self, cell):
         return self.parent._get_dependent_tokens(self.position)
 
+
 def has_tokens(value):
     ms = re.findall(token_re, value)
     return len(ms) > 0
@@ -199,6 +200,7 @@ class Formula(IFormula):
         tokens = {}
         for token in tokens_to_replace:
             a, b = self.formula_dict[token](*cell)
+
             if self.range_dict.get(token, False):
                 tokens[token] = self.table.get_cell_range(a, b)
             else:
