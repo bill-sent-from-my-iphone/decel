@@ -4,10 +4,10 @@ import pandas as pd
 import re
 
 from .input import BasicInput
-from .utils import fix_text_to_width, align_text, min_max
+from .utils import fix_text_to_width, align_text, min_max, iterate_range_2d
 from .window import Window
 from data.table_data import TableData
-from data.formula import colint, colval, has_tokens
+from data.formula import colint, colval, has_tokens, Formula
 from .popup import Popup, InputPopup
 from .keys import *
 
@@ -86,6 +86,7 @@ class SheetWindow(Window):
         self.grab_anchor = None
         self.active_cell = (0, 0)
         self.input_active = False
+        self.yank_vals = {}
 
         self.input = BasicInput(on_confirm=self.confirm_input, on_cancel=self.cancel_input)
 
@@ -446,11 +447,14 @@ class SheetWindow(Window):
             self.save_file()
         pass
 
+    def confirm_filename_and_save(self, name):
+        self.table.set_filename(name)
+        self.table.save()
+
     def get_filename_input(self):
-        p = InputPopup("Error", "You must specify a filename:", None, None, parent=self, colors=self.colors)
+        p = InputPopup("Error", "You must specify a filename:", self.confirm_filename_and_save, None, parent=self, colors=self.colors)
         self.add_child(p)
         self.set_active(p)
-        pass
 
     def transfer_cell(self, start, dest):
         sr, sc = start
@@ -548,6 +552,45 @@ class SheetWindow(Window):
     def start_select(self):
         self.select_anchor = self.cursor
 
+    def get_yank_value(self, r, c):
+        '''
+            Integer value for r, c
+        '''
+        formula = self.table.get_formula(r, colval(c))
+        if formula:
+            return formula
+        else:
+            return self.table.get_cell_value(colval(c), r)
+
+    def yank(self):
+        yank_vals = {}
+        start = None
+        if self.select_anchor:
+            for r, c in iterate_range_2d(self.select_anchor, self.cursor):
+                if not start:
+                    start = (r, c)
+                coords = (r, c)
+                mr = r - start[0]
+                mc = c - start[1]
+                mod_coords = (mr, mc)
+                yank_vals[mod_coords] = self.get_yank_value(r, c)
+            self.yank_vals = yank_vals
+            self.end_select()
+        else:
+            self.yank_vals = { (0, 0) : self.get_yank_value(*self.cursor)}
+
+    def paste(self):
+        row, col = self.cursor
+        for r, c in self.yank_vals:
+            dst_row = row + r
+            dst_col = colval(col + c)
+            val = self.yank_vals[(r,c)]
+            if isinstance(val, Formula):
+                child = val.make_child((dst_row, dst_col))
+                self.table.add_formula(dst_row, dst_col, child)
+            else:
+                self.table.set_value(dst_row, dst_col, val)
+
     def get_motion_size(self, base_val=1):
         if not self.current_motion:
             return base_val
@@ -604,6 +647,11 @@ class SheetWindow(Window):
 
             if char == ord('x'):
                 self.clear_value()
+
+            if char == ord('y'):
+                self.yank()
+            if char == ord('p'):
+                self.paste()
 
         ## MOVEMENT ##
             if char == ord('m'):

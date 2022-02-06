@@ -38,7 +38,7 @@ class ConfigFile:
 class DecelConfig(ConfigFile):
 
     def __init__(self):
-        super().__init__('~/.config.dc', 'DECEL_CONFIG_FILE')
+        super().__init__('~/.config.dcfg', 'DECEL_CONFIG_FILE')
 
     def default_column_width(self):
         return self.get_val('column_width', action=int, default=7)

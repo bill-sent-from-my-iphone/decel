@@ -45,3 +45,14 @@ def min_max(*vals):
     mx = max(vals)
     return (mn, mx)
 
+def iterate_range_2d(A, B):
+    r1, c1 = A
+    r2, c2 = B
+    rows = [r1, r2]
+    cols = [c1, c2]
+    mr, Mr = min_max(*rows)
+    mc, Mc = min_max(*cols)
+    for r in range(mr, Mr+1):
+        for c in range(mc, Mc+1):
+            yield (r, c)
+
