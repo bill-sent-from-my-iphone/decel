@@ -8,22 +8,8 @@ from .window import Window
 from data.table_data import TableData
 from data.formula import colint, colval, has_tokens
 from .popup import Popup, InputPopup
+from .keys import *
 
-
-CTRL_A = 1
-CTRL_E = 5
-CTRL_F = 6
-CTRL_J = 10
-CTRL_K = 11
-CTRL_L = 12
-CTRL_H = 263
-ENTER = CTRL_J
-BACKSPACE = 127
-ESCAPE = 27
-LEFT = 260
-RIGHT = 261
-UP = 259
-DOWN = 258
 
 def in_range_inc(s, e, v):
     return v >= s and v <= e

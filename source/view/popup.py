@@ -1,6 +1,7 @@
 
 import curses
 
+from .input import BasicInput
 from .window import Window
 from .utils import fix_text_to_width
 
@@ -114,9 +115,9 @@ class Popup(Window):
 class InputPopup(Popup):
 
     def __init__(self, title, message, on_confirm, on_cancel, **kwargs):
-        self.input = ''
         self.on_confirm = on_confirm
         self.on_cancel = on_cancel
+        self.input = BasicInput(on_confirm=self.confirm, on_cancel=self.cancel)
         actions = [
                 ('Enter', 'Save', self.confirm),
                 ('Esc', 'Cancel', self.cancel)
@@ -130,7 +131,7 @@ class InputPopup(Popup):
 
     def confirm(self):
         if self.on_confirm:
-            self.on_confirm(self.input)
+            self.on_confirm(self.input.text)
         self.delete()
 
     def cancel(self):
@@ -141,13 +142,9 @@ class InputPopup(Popup):
     def update_text(self):
         input_row = self.get_message_bottom() + 1
         mod = curses.A_REVERSE
-        self.draw_text_box(self.input, input_row, 3, 1, self.width - 4, mod=mod)
+        self.draw_text_box(self.input.text, input_row, 3, 1, self.width - 4, mod=mod)
 
     def process_char(self, char):
-        cmd = self.process_special(char)
-        if cmd:
-            cmd()
-        else:
-            self.input += chr(char)
-            self.update_text()
+        self.input.process_char(char)
+        self.update_text()
 
