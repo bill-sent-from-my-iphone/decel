@@ -182,6 +182,9 @@ class TableData:
 
         self.set_filename(filepath)
 
+    def filename(self):
+        return self.current_file
+
     def set_filename(self, fname):
         self.current_file = fname
 

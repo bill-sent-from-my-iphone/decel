@@ -89,6 +89,7 @@ class SheetWindow(Window):
         self.yank_vals = {}
 
         self.input = BasicInput(on_confirm=self.confirm_input, on_cancel=self.cancel_input)
+        self.tmp_message = ''
 
 
         self.current_input_type = SheetWindow.I_TYPE_DISPLAY
@@ -296,7 +297,14 @@ class SheetWindow(Window):
 
             current_visual_row += row_height
 
+    def set_tmp_message(self, val):
+        self.tmp_message = val
+
     def entry_display_value(self):
+        tmp = self.tmp_message
+        if tmp:
+            self.set_tmp_message('')
+            return tmp
         r, c = self.cursor
         row, col = (r, colval(c))
         formula = self.table.get_formula(row, col)
@@ -433,23 +441,28 @@ class SheetWindow(Window):
             c = colint(col[0].upper())
         self.update_cursor((r, c))
 
-    def save_file(self):
+    def try_save_file(self):
         if not self.table.has_filename():
             self.get_filename_input()
             return
-            pass
-        self.table.save()
-        pass
+        self.save_file()
 
     def enter_cmd(self):
         inp = self.get_input()
         if inp == 'w':
-            self.save_file()
-        pass
+            self.try_save_file()
+
+    def save_file(self):
+        fname = self.table.filename()
+        try:
+            self.table.save()
+            self.set_tmp_message('Saved file: {}'.format(fname))
+        except:
+            self.set_tmp_message('Error saving file: {}'.format(fname))
 
     def confirm_filename_and_save(self, name):
         self.table.set_filename(name)
-        self.table.save()
+        self.save_file()
 
     def get_filename_input(self):
         p = InputPopup("Error", "You must specify a filename:", self.confirm_filename_and_save, None, parent=self, colors=self.colors)
