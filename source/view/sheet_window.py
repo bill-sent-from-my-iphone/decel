@@ -136,6 +136,26 @@ class SheetWindow(Window):
             return self.row_heights[row]
         return self.default_row_height
 
+    def change_column_size(self, size=None, col=None, negative=False):
+        if not col:
+            col = self.cursor[1]
+        if not size:
+            size = self.get_motion_size()
+        if negative:
+            size = -size
+        w = self.column_widths.get(col, self.default_col_width)
+        nsize = w + size
+        MIN_SIZE = 3
+        if nsize < MIN_SIZE:
+            nsize = MIN_SIZE
+        self.column_widths[col] = nsize
+
+    def change_row_size(self, size, row=None):
+        if not row:
+            row = self.cursor[0]
+        h = self.row_heights.get(row, self.default_row_height)
+        self.row_heights[row] = h + size
+
     def draw_cell_inner(self, content, row, col, height, width,
                         alignment='r', mod=0, selected=False):
         body = ''
@@ -441,6 +461,24 @@ class SheetWindow(Window):
             v = self.table.get_cell_value(sc, sr)
             self.table.set_value(dr, dc, v)
 
+    def clear_value(self):
+        if self.select_anchor:
+            r1, c1 = self.cursor
+            r2, c2 = self.select_anchor
+            rows = [r1, r2]
+            cols = [c1, c2]
+            rm = min(rows)
+            rM = max(rows)
+            cm = min(cols)
+            cM = max(cols)
+            for r in range(rm, rM+1):
+                for c in range(cm, cM+1):
+                    self.table.set_value(r, colval(c), None)
+            self.end_select()
+        else:
+            r, c = self.cursor
+            self.table.set_value(r, colval(c), None)
+
     # Grab and drag values to easily expand formulae
     def start_grab(self):
         if not self.select_anchor:
@@ -527,7 +565,7 @@ class SheetWindow(Window):
                 self.end_grab()
                 self.draw_page()
                 return
-            if char == ord('i'):
+            if char == ord('='):
                 self.enter_cell_input()
             if char == ord(':'):
                 self.enter_cmd_input()
@@ -556,6 +594,14 @@ class SheetWindow(Window):
 
             if char == ord('g') and not self.grabbing:
                 self.start_grab()
+
+            if char == ord('>'):
+                self.change_column_size()
+            if char == ord('<'):
+                self.change_column_size(negative=True)
+
+            if char == ord('x'):
+                self.clear_value()
 
         ## MOVEMENT ##
             if char == ord('m'):
