@@ -43,6 +43,7 @@ class TableData:
             self.data = dataframe
         self.formulae = {}
         self.dependencies = {}
+        self.current_file = ''
 
     def clear_data(self):
         self.data = pd.DataFrame()
@@ -179,9 +180,23 @@ class TableData:
                     v = str(raw_val).strip(' ')
                     self.set_string_value(r+1, i, v)
 
-        self.data.to_csv('new_file.csv', header=None, index=None)
+        self.set_filename(filepath)
+
+    def set_filename(self, fname):
+        self.current_file = fname
+
+    def has_filename(self):
+        return len(self.current_file) > 0
+
+    def save(self):
+        fname = self.current_file
+        if not fname:
+            raise Exception('No file specified')
+        if fname.endswith('.csv'):
+            self.save_csv(fname)
 
     def save_csv(self, filepath):
-        # need to add check to verify path if file exists
-        pass
+        if not filepath:
+            filepath = self.current_file
+        self.data.to_csv(filepath, header=None, index=None)
 

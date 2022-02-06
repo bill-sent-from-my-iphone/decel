@@ -7,6 +7,7 @@ from .utils import fix_text_to_width, align_text, min_max
 from .window import Window
 from data.table_data import TableData
 from data.formula import colint, colval, has_tokens
+from .popup import Popup, InputPopup
 
 
 CTRL_A = 1
@@ -426,7 +427,24 @@ class SheetWindow(Window):
             c = colint(col[0].upper())
         self.update_cursor((r, c))
 
+    def save_file(self):
+        if not self.table.has_filename():
+            self.get_filename_input()
+            return
+            pass
+        self.table.save()
+        pass
+
     def enter_cmd(self):
+        inp = self.current_input
+        if inp == 'w':
+            self.save_file()
+        pass
+
+    def get_filename_input(self):
+        p = InputPopup("Error", "You must specify a filename:", None, None, parent=self, colors=self.colors)
+        self.add_child(p)
+        self.set_active(p)
         pass
 
     def process_input_char(self, charval):

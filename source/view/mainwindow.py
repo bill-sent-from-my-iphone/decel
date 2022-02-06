@@ -37,7 +37,7 @@ class MainWindow(Window):
         return self.active_window
 
     def create_sheet(self):
-        self.sheet = SheetWindow(0, 0, self.height, self.width, colors=self.colors)
+        self.sheet = SheetWindow(0, 0, self.height, self.width, parent=self, colors=self.colors)
         self.add_child(self.sheet)
         pass
 
@@ -72,7 +72,6 @@ class MainWindow(Window):
                 self.terminate()
                 break
             if (ch == ord('p')):
-                continue
                 self.add_popup("Warning! Something happened!", "Yo my dood I'm not sure what's going on but")
 
 

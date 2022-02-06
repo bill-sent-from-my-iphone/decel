@@ -80,12 +80,12 @@ class Window:
         for i in range(len(text)):
             self.update_value(row, col+i, text[i], mod)
 
-    def draw_text_box(self, text, row, col, height, width, alignment='l'):
+    def draw_text_box(self, text, row, col, height, width, alignment='l', mod=0):
         lines = fix_text_to_width(text, width, alignment=alignment)
         for r in range(min(height, len(lines))):
             line = lines[r]
             for i in range(len(line)):
-                self.update_value(row + r, col + i, line[i], 0)
+                self.update_value(row + r, col + i, line[i], mod)
 
     def set_all_changed(self):
         for r in range(self.height):
@@ -97,10 +97,11 @@ class Window:
         col = child.col
         width = child.width
         height = child.height
-        for row in height:
-            for col in width:
+        for r in range(height):
+            for c in range(width):
                 self.set_changed(row + r, col + c)
-        children.remove(child)
+        self.children.remove(child)
+        self.set_active(self)
 
     def prerefresh(self):
         pass
@@ -156,4 +157,7 @@ class Window:
 
     def process_char(self, char):
         pass
+
+    def set_active(self, window):
+        self.parent.set_active(window)
 
