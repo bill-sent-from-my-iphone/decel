@@ -114,6 +114,10 @@ class SheetWindow(Window):
         ## DEBUG
         self.wait_for_key = False
 
+    def load_config(self, config):
+        self.default_col_width = config.default_column_width()
+        self.draw_page()
+
     def set_input_active(self, input_type):
         self.input_active = True
         self.current_input_type = input_type

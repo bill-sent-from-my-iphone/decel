@@ -1,3 +1,4 @@
+import os
 import curses
 import pandas as pd
 from .colors import CursesColors
@@ -5,6 +6,7 @@ from .window import Window
 from .popup import Popup
 from .sheet_window import SheetWindow
 from data.table_data import TableData
+from configfile import DecelConfig
 
 class MainWindow(Window):
 
@@ -22,6 +24,12 @@ class MainWindow(Window):
         super().__init__(0, 0, rows, columns, colors=self.colors)
         self.create_sheet()
         self.active_window = None
+        self.config = self.get_config()
+        self.sheet.load_config(self.config)
+
+    def get_config(self):
+        cfg = DecelConfig()
+        return cfg
 
     def get_active_window(self):
         if self.active_window == None:
