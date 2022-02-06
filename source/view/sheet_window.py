@@ -138,17 +138,30 @@ class SheetWindow(Window):
 
     def change_column_size(self, size=None, col=None, negative=False):
         if not col:
-            col = self.cursor[1]
+            col_start = self.cursor[1]
         if not size:
             size = self.get_motion_size()
+        cols = [col_start]
+        if self.select_anchor:
+            cols = []
+            ac = self.select_anchor[1]
+            cs = [ac, col_start]
+            mn = min(cs)
+            mx = max(cs)
+            cols = [x for x in range(mn, mx+1)]
+
+            
         if negative:
             size = -size
-        w = self.column_widths.get(col, self.default_col_width)
-        nsize = w + size
-        MIN_SIZE = 3
-        if nsize < MIN_SIZE:
-            nsize = MIN_SIZE
-        self.column_widths[col] = nsize
+
+        for col in cols:
+            w = self.column_widths.get(col, self.default_col_width)
+            nsize = w + size
+            MIN_SIZE = 3
+            if nsize < MIN_SIZE:
+                nsize = MIN_SIZE
+            self.num_viewable_columns = 0
+            self.column_widths[col] = nsize
 
     def change_row_size(self, size, row=None):
         if not row:
