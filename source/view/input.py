@@ -18,6 +18,10 @@ class BasicInput:
         if self.on_confirm:
             self.on_confirm()
 
+    def clear(self):
+        self.text = ''
+        self.cursor = 0
+
     def process_char(self, charval):
         inp = self.text
         pos = self.cursor

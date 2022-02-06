@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 import re
 
+from .input import BasicInput
 from .utils import fix_text_to_width, align_text, min_max
 from .window import Window
 from data.table_data import TableData
@@ -85,8 +86,10 @@ class SheetWindow(Window):
         self.grab_anchor = None
         self.active_cell = (0, 0)
         self.input_active = False
-        self.current_input = ''
-        self.text_cursor = 0
+
+        self.input = BasicInput(on_confirm=self.confirm_input, on_cancel=self.cancel_input)
+
+
         self.current_input_type = SheetWindow.I_TYPE_DISPLAY
         self.entry_color = self.colors.get_color_id("Black", "Green")
         self.grab_start = None
@@ -110,12 +113,18 @@ class SheetWindow(Window):
         self.current_input_type = input_type
         self.active_cell = self.cursor
 
+        self.input.clear()
+
+
     def close_input(self):
         if self.current_input_type == SheetWindow.I_TYPE_ENTRY:
             self.cursor = self.active_cell
         self.current_input_type = SheetWindow.I_TYPE_DISPLAY
         self.input_active = False
-        self.current_input = ""
+        self.input.clear()
+
+    def get_input(self):
+        return self.input.text
 
     def get_column_width(self, col):
         if col in self.column_widths:
@@ -316,9 +325,9 @@ class SheetWindow(Window):
         if self.current_input_type == SheetWindow.I_TYPE_DISPLAY:
             text_to_draw += self.entry_display_value()
         else:
-            text_to_draw += self.current_input
+            text_to_draw += self.get_input()
             if len(text_to_draw) > self.c_width - 2:
-                text_to_draw = beginning + ".." + self.current_input[-(self.c_width-7):]
+                text_to_draw = beginning + ".." + self.get_input()[-(self.c_width-7):]
         self.draw_text(text_to_draw, input_line, self.c_row + 1, self.entry_color)
 
     def prerefresh(self):
@@ -397,13 +406,23 @@ class SheetWindow(Window):
     def cancel_input(self):
         self.close_input()
 
+    def confirm_input(self):
+        itype = self.current_input_type
+        if self.current_input_type == SheetWindow.I_TYPE_ENTRY:
+            self.enter_value_into_cell()
+        if self.current_input_type == SheetWindow.I_TYPE_CMD:
+            self.enter_cmd()
+        if self.current_input_type == SheetWindow.I_TYPE_MOVE:
+            self.enter_movement_input()
+        self.close_input()
+
     def enter_value_into_cell(self):
-        val = self.current_input
+        val = self.get_input()
         r, c = self.active_cell
         self.table.set_string_value(r, c, val)
 
     def enter_movement_input(self):
-        inp = self.current_input
+        inp = self.get_input()
         r, c = self.cursor
         row = re.findall(r'[0-9]+', inp)
         if row:
@@ -422,7 +441,7 @@ class SheetWindow(Window):
         pass
 
     def enter_cmd(self):
-        inp = self.current_input
+        inp = self.get_input()
         if inp == 'w':
             self.save_file()
         pass
@@ -432,44 +451,6 @@ class SheetWindow(Window):
         self.add_child(p)
         self.set_active(p)
         pass
-
-    def process_input_char(self, charval):
-        ctype = self.current_input_type
-        
-        inp = self.current_input
-        cursor_pos = self.text_cursor
-        pre_cursor = inp[:cursor_pos]
-        post_cursor = inp[cursor_pos:]
-
-        if charval == ESCAPE:
-            self.cancel_input()
-        elif charval == LEFT:
-            ncursor = cursor_pos - 1
-            if ncursor >= 0:
-                self.text_cursor = ncursor
-        elif charval == RIGHT:
-            ncursor = cursor_pos + 1
-            if ncursor <= len(self.current_input):
-                self.text_cursor = ncursor
-            pass
-        elif charval == BACKSPACE:
-            pre_cursor = pre_cursor[:-1]
-            self.text_cursor -= 1
-            self.current_input = pre_cursor + post_cursor
-        elif charval == ENTER:
-            if ctype == SheetWindow.I_TYPE_ENTRY:
-                self.enter_value_into_cell()
-            if ctype == SheetWindow.I_TYPE_CMD:
-                self.enter_cmd()
-            if ctype == SheetWindow.I_TYPE_MOVE:
-                self.enter_movement_input()
-            self.close_input()
-        elif ctype == SheetWindow.I_TYPE_ENTRY and charval == CTRL_F:
-            # Find
-            pass
-        else:
-            self.current_input = pre_cursor + chr(charval) + post_cursor
-            self.text_cursor += 1
 
     def transfer_cell(self, start, dest):
         sr, sc = start
@@ -580,7 +561,7 @@ class SheetWindow(Window):
         if char == ord('!'):
             self.wait_for_key = True
         if self.input_active:
-            self.process_input_char(char)
+            self.input.process_char(char)
         else:
             if self.grabbing and char == ENTER:
                 self.end_grab()
