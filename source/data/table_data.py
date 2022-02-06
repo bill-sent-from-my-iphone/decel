@@ -54,12 +54,19 @@ class TableData:
             return self.formulae[row][col].get_value()
         return self.data.get(row, {}).get(col, None)
 
-    def get_cell_range(self, start_pos, end_pos):
+    def get_cell_range_coords(self, start_pos, end_pos):
         output = []
         rows = sorted([start_pos[0], end_pos[0]])
         cols = sorted([start_pos[1], end_pos[1]])
         for row in range(rows[0], rows[1]+1):
             for col in range(cols[0], cols[1]+1):
+                output.append((row, colval(col)))
+        return output
+
+    def get_cell_range(self, start_pos, end_pos):
+        output = []
+        coords = self.get_cell_range_coords(start_pos, end_pos)
+        for col, row in coords:
                 val = self.get_cell_value(colval(col), row)
                 output.append(val)
         return output
@@ -89,7 +96,7 @@ class TableData:
         self.dependencies[lead_token][dependent_token] = True
 
     def add_dependencies(self, formula):
-        tokens = formula.get_dependent_tokens()
+        tokens = formula.get_dependent_coordinates(formula.position)
         f_pos = formula.position
         for token in tokens:
             self.add_dependency(token, f_pos)

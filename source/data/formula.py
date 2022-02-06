@@ -47,10 +47,30 @@ def colval(num):
         return colval(num2 - 1) + letter
     return letter
 
-class IFormula:
 
-    def __init__(self, cell):
+column_re = r'\$?[A-Z]+'
+row_re = r'\$?[0-9]+'
+cell_re = column_re + row_re
+token_re = cell_re + '(?::' + cell_re + ')?'
+
+
+
+def has_tokens(value):
+    ms = re.findall(token_re, value)
+    return len(ms) > 0
+
+class Formula:
+    '''
+        position - [row, col] of formula (eg [1, "AB"])
+        formula - the formula (eg $A:B23:$100)
+    '''
+    def __init__(self, cell, formula, table):
         self.position = cell
+        self.table = table
+        self.formula = formula
+        self.formula_dict = {}
+        self.range_dict = {}
+        self._decipher()
 
     def _origin_row(self):
         return self.position[0]
@@ -58,14 +78,8 @@ class IFormula:
     def _origin_col(self):
         return self.position[1]
 
-    def get_value_for_cell(self, cell):
-        return None
-        
     def get_value(self):
         return self.get_value_for_cell((self._origin_row(), self._origin_col()))
-
-    def get_display_formula(self):
-        return ""
 
     def get_dependent_tokens(self):
         tokens = self._get_dependent_tokens(self.position)
@@ -84,42 +98,6 @@ class IFormula:
         return child
 
 
-
-column_re = r'\$?[A-Z]+'
-row_re = r'\$?[0-9]+'
-cell_re = column_re + row_re
-token_re = cell_re + '(?::' + cell_re + ')?'
-
-
-class ChildFormula(IFormula):
-
-    def __init__(self, parent, cell):
-        super().__init__(cell)
-        self.parent = parent
-
-    def get_value_for_cell(self, cell):
-        return self.parent.get_value_for_cell(cell)
-
-    def _get_dependent_tokens(self, cell):
-        return self.parent._get_dependent_tokens(self.position)
-
-
-def has_tokens(value):
-    ms = re.findall(token_re, value)
-    return len(ms) > 0
-
-class Formula(IFormula):
-    '''
-        position - [row, col] of formula (eg [1, "AB"])
-        formula - the formula (eg $A:B23:$100)
-    '''
-    def __init__(self, cell, formula, table):
-        super().__init__(cell)
-        self.table = table
-        self.formula = formula
-        self.formula_dict = {}
-        self.range_dict = {}
-        self._decipher()
 
     def get_display_formula(self):
         return self.formula
@@ -194,6 +172,18 @@ class Formula(IFormula):
         self.formula_dict = f_dict
         self.range_dict = range_dict
 
+    def get_dependent_coordinates(self, cell):
+        row, col = cell
+        tokens_to_replace = sorted(self.formula_dict.keys(), key=len, reverse=True)
+        cells = []
+        for token in tokens_to_replace:
+            a, b = self.formula_dict[token](*cell)
+            if self.range_dict.get(token, False):
+                cells.extend(self.table.get_cell_range_coords(a, b))
+            else:
+                cells.append((a, colval(b)))
+        return cells
+
     def _get_dependent_tokens(self, cell):
         row, col = cell
         tokens_to_replace = sorted(self.formula_dict.keys(), key=len, reverse=True)
@@ -244,5 +234,21 @@ class Formula(IFormula):
             raise Exception(type(v))
             raise Exception(tmp_formula, local_vars)
         return x
+
+
+class ChildFormula(Formula):
+
+    def __init__(self, parent, cell):
+        super().__init__(cell, parent.formula, parent.table)
+        self.position = cell
+        self.parent = parent
+
+    def get_value_for_cell(self, cell):
+        return self.parent.get_value_for_cell(cell)
+
+    def get_dependent_coordinates(self, cell):
+        coords = self.parent.get_dependent_coordinates(cell)
+        return coords
+
 
 colval(26)
