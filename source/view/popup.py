@@ -1,9 +1,9 @@
 
 import curses
 
-from .input import BasicInput
+from .utils.input import BasicInput
+from .utils.general import fix_text_to_width
 from .window import Window
-from .utils import fix_text_to_width
 
 
 class Popup(Window):
@@ -137,7 +137,7 @@ class InputPopup(Popup):
     def cancel(self):
         if self.on_cancel:
             self.on_cancel()
-        self.cancel()
+        self.delete()
 
     def update_text(self):
         input_row = self.get_message_bottom() + 1

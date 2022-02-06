@@ -3,13 +3,13 @@ import numpy as np
 import pandas as pd
 import re
 
-from .input import BasicInput
-from .utils import fix_text_to_width, align_text, min_max, iterate_range_2d
+from .utils.input import BasicInput
+from .utils.general import fix_text_to_width, align_text, min_max, iterate_range_2d
 from .window import Window
 from data.table_data import TableData
 from data.formula import colint, colval, has_tokens, Formula
 from .popup import Popup, InputPopup
-from .keys import *
+from .utils.keys import *
 
 
 def in_range_inc(s, e, v):

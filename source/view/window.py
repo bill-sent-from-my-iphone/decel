@@ -1,7 +1,7 @@
 import curses
 import pandas as pd
 
-from .utils import fix_text_to_width
+from .utils.general import fix_text_to_width
 from .colors import CursesColors
 
 class Window:

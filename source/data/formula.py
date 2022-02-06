@@ -72,6 +72,9 @@ class Formula:
         self.range_dict = {}
         self._decipher()
 
+    def root(self):
+        return self
+
     def _origin_row(self):
         return self.position[0]
 
@@ -238,6 +241,9 @@ class ChildFormula(Formula):
         super().__init__(cell, parent.formula, parent.table)
         self.position = cell
         self.parent = parent
+
+    def root(self):
+        return self.parent.root()
 
     def get_value_for_cell(self, cell):
         return self.parent.get_value_for_cell(cell)
