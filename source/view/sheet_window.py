@@ -101,6 +101,8 @@ class SheetWindow(Window):
 
         self.last_column = 0
         self.num_viewable_columns = 0
+        self.row_jump_size = 5
+        self.col_jump_size = 3
 
         self.draw_page()
         ## DEBUG
@@ -108,6 +110,8 @@ class SheetWindow(Window):
 
     def load_config(self, config):
         self.default_col_width = config.default_column_width()
+        self.row_jump_size = config.row_jump_size()
+        self.col_jump_size = config.col_jump_size()
         self.draw_page()
 
     def set_input_active(self, input_type):
@@ -683,13 +687,17 @@ class SheetWindow(Window):
                 self.move_cursor(0, -s)
 
             if char == ord('J'):
-                self.move_cursor(5, 0)
+                s = self.row_jump_size
+                self.move_cursor(s, 0)
             if char == ord('K'):
-                self.move_cursor(-5, 0)
+                s = self.row_jump_size
+                self.move_cursor(-s, 0)
             if char == ord('L'):
-                self.move_cursor(0, 3)
+                s = self.col_jump_size
+                self.move_cursor(0, s)
             if char == ord('H'):
-                self.move_cursor(0, -3)
+                s = self.col_jump_size
+                self.move_cursor(0, -s)
             pass
         self.draw_page()
 
