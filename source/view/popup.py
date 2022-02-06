@@ -141,8 +141,13 @@ class InputPopup(Popup):
 
     def update_text(self):
         input_row = self.get_message_bottom() + 1
-        mod = curses.A_REVERSE
-        self.draw_text_box(self.input.text, input_row, 3, 1, self.width - 4, mod=mod)
+        mod = self.colors.get_color_id("White", "Blue")
+        #mod = curses.A_REVERSE
+        txt = self.input.text
+        inner_width = self.width - 8
+        num_spaces = inner_width - len(txt)
+        txt += num_spaces * ' '
+        self.draw_text_box(txt, input_row, 3, 1, self.width - 4, mod=mod)
 
     def process_char(self, char):
         self.input.process_char(char)
