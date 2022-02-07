@@ -96,7 +96,7 @@ class TableData:
     def update_value(self, row, col):
         if self._has_formula(row, col):
             val = self.formulae[row][col].get_value()
-            self.data.at[row, col] = val
+            self.set_value(row, col, val)
 
     def remove_formula(self, row, col):
         if row in self.formulae:
@@ -140,8 +140,8 @@ class TableData:
             self.formulae[row] = {}
         self.formulae[row][col] = new_formula
         val = new_formula.get_value()
-        self.set_value(row, col, val)
         self.add_dependencies(new_formula)
+        self.set_value(row, col, val)
 
     def set_string_value(self, r, c, val):
         if self._has_formula(r, c):
