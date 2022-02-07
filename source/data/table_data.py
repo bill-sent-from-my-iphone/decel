@@ -50,6 +50,12 @@ class TableData:
         self.formulae = {}
         self.dependencies = {}
 
+    def force_update(self):
+        for row, rowdata in self.data.iterrows():
+            for col, value in rowdata.iteritems():
+                self.update_value(row, col)
+
+
     def has_value(self, row, col):
         if self._has_formula(col, row):
             return True

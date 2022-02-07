@@ -109,6 +109,9 @@ class SheetWindow(Window):
         ## DEBUG
         self.wait_for_key = False
 
+    def force_refresh(self):
+        self.table.force_update()
+
     def load_config(self, config):
         self.default_col_width = config.default_column_width()
         self.row_jump_size = config.row_jump_size()
@@ -733,6 +736,9 @@ class SheetWindow(Window):
                 self.yank()
             if char == ord('p'):
                 self.paste()
+
+            if char == ord('R'):
+                self.force_refresh()
 
         ## MOVEMENT ##
             if char == ord('s'):
