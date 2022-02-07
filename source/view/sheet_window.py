@@ -87,6 +87,7 @@ class SheetWindow(Window):
         self.active_cell = (0, 0)
         self.input_active = False
         self.yank_vals = {}
+        self.teleporting = False
 
         self.input = BasicInput(on_confirm=self.confirm_input, on_cancel=self.cancel_input)
         self.tmp_message = ''
@@ -365,32 +366,92 @@ class SheetWindow(Window):
         r, c = self.cursor
         newr = r + rchange
         newc = c + cchange
-        if newr < 0:
-            newr = 0
-        if newc < 0:
-            newc = 0
         self.update_cursor((newr, newc))
 
     def move_cursor(self, rchange, cchange):
-        self._move_cursor_inner(rchange, cchange)
+        if self.teleporting:
+            self.teleport(rchange, cchange)
+        else:
+            self._move_cursor_inner(rchange, cchange)
+
+    def _find_until(self, start, vertical, positive, radius=2, max_iter=1000):
+        amount = 1 if positive else -1
+        change = (amount, 0) if vertical else (0, amount)
+        offsets = [x for x in range(-radius, radius+1)]
+        if vertical:
+            pairs = [(0, i) for i in offsets]
+        else:
+            pairs = [(i, 0) for i in offsets]
+
+        def real_cell_has_value(start, offset):
+            sr, sc = start
+            mr, mc = offset
+            r = sr + mr
+            c = sc + mc
+            return self.table.has_value(r, colval(c))
+
+        r, c = start
+        dr, dc = change
+
+        start_pairs = {}
+        for p in pairs:
+            start_pairs[p] = real_cell_has_value((r + dr, c + dc), p)
+
+        found = False
+        for i in range(max_iter):
+            r += dr
+            c += dc
+            place = (r, c)
+            for offset in pairs:
+                initial_val = start_pairs[offset]
+                new_val = real_cell_has_value(place, offset)
+                if initial_val != new_val:
+                    found = True
+                    break
+            if found:
+                break
+        if found:
+            return (r, c)
+        return None
+
+    def teleport(self, rchange, cchange):
+        ncursor = self.cursor
+        if rchange != 0:
+            if rchange > 0:
+                ncursor = self._find_until(self.cursor, True, True)
+            else:
+                ncursor = self._find_until(self.cursor, True, False)
+            pass
+        if cchange != 0:
+            if cchange > 0:
+                ncursor = self._find_until(self.cursor, False, True)
+            else:
+                ncursor = self._find_until(self.cursor, False, False)
+        self.teleporting = False
+        if ncursor:
+            self.update_cursor(ncursor)
 
     def update_cursor(self, new_cursor):
         orow, ocol = self.cursor
-        self.cursor = new_cursor
-        row, col = new_cursor
-        if row < self.current_row:
-            self.current_row = row
-        if col < self.current_col:
-            self.current_col = col
+        nr, nc = new_cursor
+        if nr < 0:
+            nr = 0
+        if nc < 0:
+            nc = 0
+        self.cursor = (nr, nc)
+        if nr < self.current_row:
+            self.current_row = nr
+        if nc < self.current_col:
+            self.current_col = nc
 
         max_cols = self.get_num_viewable_columns() - 1
         max_rows = self.c_height - 4
 
-        rdiff = row - self.current_row
+        rdiff = nr - self.current_row
         if rdiff >= max_rows:
             self.current_row += rdiff - max_rows
 
-        cdiff = col - self.current_col
+        cdiff = nc - self.current_col
         if cdiff >= max_cols:
             self.current_col += cdiff - max_cols
 
@@ -615,6 +676,9 @@ class SheetWindow(Window):
         self.current_motion = ''
         return out
 
+    def start_teleport(self):
+        self.teleporting = True
+
     def process_char(self, char):
         if self.wait_for_key:
             raise Exception(char)
@@ -671,6 +735,8 @@ class SheetWindow(Window):
                 self.paste()
 
         ## MOVEMENT ##
+            if char == ord('s'):
+                self.start_teleport()
             if char == ord('m'):
                 self.enter_move_input()
             if char == ord('j'):

@@ -50,6 +50,11 @@ class TableData:
         self.formulae = {}
         self.dependencies = {}
 
+    def has_value(self, row, col):
+        if self._has_formula(col, row):
+            return True
+        return bool(self.data.get(col, {}).get(row, False))
+
     def get_cell_value(self, row, col):
         if self._has_formula(row, col):
             return self.formulae[row][col].get_value()
