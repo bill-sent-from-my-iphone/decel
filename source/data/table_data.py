@@ -53,7 +53,13 @@ class TableData:
     def has_value(self, row, col):
         if self._has_formula(col, row):
             return True
-        return bool(self.data.get(col, {}).get(row, False))
+        if col not in self.data:
+            return False
+        val = self.data.get(col, {}).get(row, False)
+        if isinstance(val, float):
+            if pd.isna(val):
+                return False
+        return bool(val)
 
     def get_cell_value(self, row, col):
         if self._has_formula(row, col):
