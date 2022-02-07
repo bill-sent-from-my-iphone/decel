@@ -1,5 +1,7 @@
 import re
 
+from .script_loader import get_loader
+
 class FormulaDecipherException(Exception):
 
     def __init__(self, token):
@@ -222,18 +224,14 @@ class Formula:
         tokens = self._get_dependent_tokens(cell)
 
         token_index = 0
-        local_vars = {}
+        local_vars = get_loader().get_vars()
         tmp_formula = self.formula
         for token in tokens:
             token_index += 1
             varname = "DECEL_VAR_" + colval(token_index)
             local_vars[varname] = tokens[token]
             tmp_formula = tmp_formula.replace(token, varname)
-        try:
-            return eval(tmp_formula, {}, local_vars)
-        except:
-            return None
-
+        return eval(tmp_formula, globals(), local_vars)
 
 class ChildFormula(Formula):
 
