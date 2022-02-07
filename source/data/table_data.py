@@ -3,6 +3,7 @@ import os
 import pandas as pd;
 import csv
 
+from .script_loader import get_loader
 from .formula import Formula, colval, has_tokens
 
 unnamed_col = r'Unnamed: [0-9]+'
@@ -158,7 +159,8 @@ class TableData:
             self.make_formula(r, col, val)
         else:
             try:
-                value = eval(val)
+                local_vars = get_loader().get_vars()
+                value = eval(val, {}, local_vars)
                 try:
                     v = float(value)
                     self.set_value(r, col, v)

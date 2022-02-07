@@ -231,7 +231,7 @@ class Formula:
             varname = "DECEL_VAR_" + colval(token_index)
             local_vars[varname] = tokens[token]
             tmp_formula = tmp_formula.replace(token, varname)
-        return eval(tmp_formula, globals(), local_vars)
+        return eval(tmp_formula, {}, local_vars)
 
 class ChildFormula(Formula):
 
