@@ -85,8 +85,8 @@ class TableData:
     def get_cell_range(self, start_pos, end_pos):
         output = []
         coords = self.get_cell_range_coords(start_pos, end_pos)
-        for col, row in coords:
-                val = self.get_cell_value(colval(col), row)
+        for row, col in coords:
+                val = self.get_cell_value(col, row)
                 output.append(val)
         return output
 

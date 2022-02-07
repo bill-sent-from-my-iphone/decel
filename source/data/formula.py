@@ -102,8 +102,6 @@ class Formula:
         child = ChildFormula(self, cell)
         return child
 
-
-
     def get_display_formula(self):
         return self.formula
 
@@ -233,12 +231,53 @@ class Formula:
             tmp_formula = tmp_formula.replace(token, varname)
         return eval(tmp_formula, {}, local_vars)
 
+def adjust_single_token(token, cell):
+    c_row, c_col = cell
+    my_re = r'(\$?[A-Z]+)(\$?[0-9]+)'
+    row, col = re.findall(my_re, token)[0]
+    output = ''
+    if row.startswith('$'):
+        output += '$'
+    output += colval(c_col)
+    if col.startswith('$'):
+        output += '$'
+    output += str(c_row)
+    return output
+
+def adjust_token(token, formula, cell_s):
+    if ':' in token:
+        start, end = cell_s
+        sr, sc = start
+        er, ec = end
+
+        one, two = token.split(':')
+        s_token = adjust_single_token(one, start)
+        e_token = adjust_single_token(two, end)
+        return s_token + ':' + e_token
+    else:
+        return adjust_single_token(token, cell_s)
+
 class ChildFormula(Formula):
 
     def __init__(self, parent, cell):
         super().__init__(cell, parent.formula, parent.table)
         self.position = cell
         self.parent = parent
+        self.display_formula = None
+
+    def get_display_formula(self):
+        formula = self.parent.formula
+        if not self.display_formula:
+            tokens_to_replace = sorted(self.parent.formula_dict.keys(), key=len, reverse=True)
+            tokens = {}
+            for token in tokens_to_replace:
+                a, b = self.root().formula_dict[token](*self.position)
+                new_token = adjust_token(token, formula, (a, b))
+                tokens[token] = new_token
+            for token in tokens:
+                formula = formula.replace(token, tokens[token])
+            self.display_formula = formula
+        return self.display_formula
 
     def root(self):
         return self.parent.root()
