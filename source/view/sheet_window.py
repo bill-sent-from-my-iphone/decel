@@ -228,7 +228,6 @@ class SheetWindow(Window):
 
     def draw_page(self):
         self.table.trigger_update()
-        self.table.trigger_update()
         self.draw_sheet()
         self.draw_entry()
 
@@ -628,6 +627,7 @@ class SheetWindow(Window):
         self.grabbing = False
         self.grab_start = None
         self.end_select()
+        self.force_refresh()
 
     def end_select(self):
         self.select_anchor = None
