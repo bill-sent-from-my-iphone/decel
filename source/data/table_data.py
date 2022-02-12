@@ -142,8 +142,8 @@ class TableData:
 
         val = new_formula.get_value()
         self.add_dependencies(new_formula)
+        self.set_value(row, col, val)
         self.token_changed((row, col))
-        #self.set_value(row, col, val)
 
     def set_string_value(self, r, c, val):
         if self._has_formula(r, c):
