@@ -142,7 +142,7 @@ class TableData:
 
         val = new_formula.get_value()
         self.add_dependencies(new_formula)
-        self.token_changed((col, row))
+        self.token_changed((row, col))
         #self.set_value(row, col, val)
 
     def set_string_value(self, r, c, val):

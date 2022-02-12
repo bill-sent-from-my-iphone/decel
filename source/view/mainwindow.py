@@ -68,7 +68,5 @@ class MainWindow(Window):
             self.stdscr.refresh()
             ch = self.stdscr.getch()
             self.get_active_window().process_char(ch)
-            if (ch == ord('q')):
-                self.terminate()
 
 
