@@ -228,6 +228,7 @@ class SheetWindow(Window):
 
     def draw_page(self):
         self.table.trigger_update()
+        self.table.trigger_update()
         self.draw_sheet()
         self.draw_entry()
 
