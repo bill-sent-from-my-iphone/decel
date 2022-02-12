@@ -227,6 +227,7 @@ class SheetWindow(Window):
         return (r, colval(c))
 
     def draw_page(self):
+        self.table.trigger_update()
         self.draw_sheet()
         self.draw_entry()
 

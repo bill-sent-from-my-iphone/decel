@@ -27,6 +27,92 @@ def read_token(token):
     row = int(m.group(0))
     return row, row_lock, col, col_lock
 
+class DependencyNode:
+
+    def __init__(self, value):
+        self.value = value
+        self.children = []
+        self.parents = []
+
+    def add_parent(self, parent):
+        self.parents.append(parent)
+
+    def add_child(self, child):
+        self.children.append(child)
+
+    def num_ancestors(self):
+        output = 0
+        for p in self.parents:
+            output += 1
+            output += p.num_ancestors()
+        return output
+
+    def num_children(self):
+        output = 0
+        for c in self.children:
+            output += 1
+            output += c.num_children()
+        return output
+
+    def yield_values(self, seen=None):
+        if seen is None:
+            seen = []
+
+        for parent in self.parents:
+            if parent.value in seen:
+                continue
+            for v in parent.yield_values(seen=seen):
+                yield v
+
+        yield self.value
+        seen.append(self.value)
+
+        for child in self.children:
+            if child.value in seen:
+                continue
+            for v in child.yield_values(seen=seen):
+                yield v
+
+    def __eq__(self, other):
+        return self.value == other.value
+
+class DependencyTree:
+
+    def __init__(self):
+        self.node_dict = {}
+
+    def shake(self):
+        self.node_dict = {}
+
+    def get_node(self, value):
+        if value in self.node_dict:
+            return self.node_dict[value]
+        out = DependencyNode(value)
+        self.node_dict[value] = out
+        return out
+
+    def add_dependency(self, parent, child):
+        p = self.get_node(parent)
+        c = self.get_node(child)
+        if p not in c.parents:
+            c.add_parent(p)
+        if c not in c.children:
+            p.add_child(c)
+
+    def get_roots(self):
+        roots = []
+        for val in self.node_dict:
+            node = self.node_dict[val]
+            if node.num_ancestors() == 0:
+                roots.append(node)
+        return roots
+
+    def yield_values(self):
+        seen = []
+        for r in self.get_roots():
+            for v in r.yield_values(seen):
+                yield v
+
 class TableData:
     '''
         This will contain data for a given row
@@ -45,6 +131,7 @@ class TableData:
         self.formulae = {}
         self.dependencies = {}
         self.current_file = ''
+        self.tree = DependencyTree()
 
     def clear_data(self):
         self.data = pd.DataFrame()
@@ -120,23 +207,14 @@ class TableData:
         for token in tokens:
             self.add_dependency(token, f_pos)
 
-    def get_dependencies(self, row, col):
-        return self.dependencies.get((row, col), {}).keys()
-
     def token_changed(self, cell):
-        # TODO: Optimize this.
-        # Look at which tokens have more/fewer dependencies and don't
-        # duplicate cells that are dependent on something that is going to change
-        # anyway
-        # eg: A0 = 1
-        #     A1 = A0
-        #     A2 = A0 + A1
-        # If the user updates A0, we would want to update A1 first, because updating
-        # A2 would calculate it with a false A1, then when A1 changes it would be
-        # recalculated
+        for child in self.dependencies.get(cell, {}):
+            self.tree.add_dependency(cell, child)
 
-        for d_row, d_col in self.dependencies.get(cell, {}):
-            self.update_value(d_row, d_col)
+    def trigger_update(self):
+        for row, col in self.tree.yield_values():
+            self.update_value(row, col)
+        self.tree.shake()
 
     def make_formula(self, row, col, formula):
         new_formula = Formula((row, col), formula, self)
@@ -149,6 +227,7 @@ class TableData:
         val = new_formula.get_value()
         self.add_dependencies(new_formula)
         self.set_value(row, col, val)
+        self.update_value(row, col)
 
     def set_string_value(self, r, c, val):
         if self._has_formula(r, c):
