@@ -40,20 +40,6 @@ class DependencyNode:
     def add_child(self, child):
         self.children.append(child)
 
-    def num_ancestors(self):
-        output = 0
-        for p in self.parents:
-            output += 1
-            output += p.num_ancestors()
-        return output
-
-    def num_children(self):
-        output = 0
-        for c in self.children:
-            output += 1
-            output += c.num_children()
-        return output
-
     def yield_values(self, seen=None):
         if seen is None:
             seen = []
@@ -103,7 +89,7 @@ class DependencyTree:
         roots = []
         for val in self.node_dict:
             node = self.node_dict[val]
-            if node.num_ancestors() == 0:
+            if len(node.parents) == 0:
                 roots.append(node)
         return roots
 
@@ -141,8 +127,8 @@ class TableData:
     def force_update(self):
         for row, rowdata in self.data.iterrows():
             for col, value in rowdata.iteritems():
-                self.update_value(row, col)
-
+                self.token_changed((row, col))
+        self.trigger_update()
 
     def has_value(self, row, col):
         if self._has_formula(col, row):
