@@ -229,7 +229,12 @@ class Formula:
             varname = "DECEL_VAR_" + colval(token_index)
             local_vars[varname] = tokens[token]
             tmp_formula = tmp_formula.replace(token, varname)
-        return eval(tmp_formula, {}, local_vars)
+        try:
+            val = eval(tmp_formula, {}, local_vars)
+            return val
+        except:
+            val = "Formula Error: ({})".format(tmp_formula)
+            return val
 
 def adjust_single_token(token, cell):
     c_row, c_col = cell

@@ -109,7 +109,7 @@ class TableData:
 
     def remove_formula(self, row, col):
         if row in self.formulae:
-            del self.formulae[row]
+            del self.formulae[row][col]
 
     def add_dependency(self, lead_token, dependent_token):
         if lead_token not in self.dependencies:
@@ -146,10 +146,10 @@ class TableData:
         self.token_changed((row, col))
 
     def set_string_value(self, r, c, val):
-        if self._has_formula(r, c):
-            self.remove_formula(r, c)
-        val = val.strip(' ')
         col = colval(c)
+        if self._has_formula(r, col):
+            self.remove_formula(r, col)
+        val = val.strip(' ')
         if has_tokens(val):
             self.make_formula(r, col, val)
         else:
