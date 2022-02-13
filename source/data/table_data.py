@@ -73,7 +73,14 @@ class TableData:
     def get_cell_value(self, row, col):
         if self._has_formula(row, col):
             return self.formulae[row][col].get_value()
-        return self.data.get(row, {}).get(col, None)
+        out = self.data.get(row, {}).get(col, None)
+
+
+        # This makes no sense but sometimes numpy floats throw a fit
+        if isinstance(out, float):
+            out = float(out)
+
+        return out
 
     def get_cell_range_coords(self, start_pos, end_pos):
         output = []
