@@ -1,10 +1,32 @@
+
+# Note: Comments must be denoted by '#' as the first non-whitespace char in the line!
+#       They will not work otherwise.
+#
+# These specify the appearance of the app
 col_width 10
 
+
+# COMMANDS
+#
+# 'cmd' = Command <name> <sequence>
+#       - Creates a command that can be called with ":<name>" in the app which will execute the key sequence specified
+#       - Special chars: <ENTER> <SPACE>
+#
+# This creates pascals triangle at the top left
 
 cmd table ma0<ENTER>=1<ENTER>gJJ<ENTER>sk<ENTER>gLLL<ENTER>mb1<ENTER>=B0+A1<ENTER>gLLLhJJk<ENTER>
 
 
+
+# 'ecmd' = Command <name> <sequence>
+#        - Same as above, but spaces will execute an <ENTER> instead of no-op
+#
+
 ecmd dragdown gJJJJ sk
+
+# Note that these can be called recursively
+# order of declaration does not matter as they are executed as keystrokes
+
 ecmd fib =1 j=1 j=#kk +#k<ENTER> :dragdown
 
 

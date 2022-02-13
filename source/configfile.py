@@ -15,6 +15,8 @@ class ConfigFile:
         with open(fname) as f:
             lines = [line.strip() for line in f.readlines() if len(line.strip()) > 0]
             for line in lines:
+                if line.startswith('#'):
+                    continue
                 items = line.split(' ')
                 self._read_line(items)
 
