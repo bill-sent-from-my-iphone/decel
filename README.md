@@ -24,10 +24,10 @@ This is a python based spreadsheet program made for use in the terminal. Designe
 
 Key | Action
 --- | ---
-`h/H` | Move Left (+`ctrl` moves just screen)
-`j/J` | Move Down (+`ctrl` moves just screen)
-`k/K` | Move Up (+`ctrl` moves just screen)
-`l/L` | Move Right (+`ctrl` moves just screen)
+`h/H` | Move Left (+`ctrl` moves just screen) (`23h` moves 23 columns left)
+`j/J` | Move Down
+`k/K` | Move Up
+`l/L` | Move Right
 `s` | Smart Move (+ `hjkl` to jump to the end/start of data)
 `m` | Jump to Cell (`m21S` jumps to cell `S21`)
 `v` | Start Selection
