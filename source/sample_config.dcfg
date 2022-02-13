@@ -2,6 +2,10 @@ col_width 10
 
 
 cmd table ma0<ENTER>=1<ENTER>gJJ<ENTER>ma0<ENTER>gLLL<ENTER>mb1<ENTER>=B0+A1<ENTER>gLLLhJJk<ENTER>
-ecmd fib ma0 =1 l=1 l=A0+B0 gLLLL
+
+
+ecmd dragdown gJJJJ sk
+ecmd fib =1 j=1 j=#kk +#k<ENTER> :dragdown
+
 
 

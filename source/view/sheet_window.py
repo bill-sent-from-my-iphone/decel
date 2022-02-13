@@ -728,7 +728,7 @@ class SheetWindow(Window):
 
     def input_process_char(self, char):
         if self.current_input_type == SheetWindow.I_TYPE_ENTRY:
-            if char == CTRL_F:
+            if char == HASHTAG:
                 self.start_secondary_select()
                 return
         self.input.process_char(char)
