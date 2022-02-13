@@ -13,11 +13,11 @@ This is a python based spreadsheet program made for use in the terminal. Designe
 - Ability to import python files for use in spreadsheet
 - Can reference singular cells `$A$1`, referential cells `B2`, cell ranges `$A2:B5`, or any combination
 - Drag, copy, and paste functions and values of one or many cells to different locations
+- Custom Commands based off keystrokes
 
 
 ##### Coming Soon
 
-- Custom Commands
 - Custom Filetype that preserves functions (currently only csv)
 - Repeat Commands
 - Undo / Redo functionality

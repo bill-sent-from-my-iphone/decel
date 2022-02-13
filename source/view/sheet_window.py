@@ -650,6 +650,7 @@ class SheetWindow(Window):
     def start_command(self, cmd):
         command = self.commands.get(cmd, None)
         if command:
+            self.close_input()
             for k in command:
                 self.process_char(k)
 

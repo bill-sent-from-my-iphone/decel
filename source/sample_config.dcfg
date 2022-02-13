@@ -1,7 +1,7 @@
 col_width 10
 
 
-cmd table ma0<ENTER>=1<ENTER>gJJ<ENTER>ma0<ENTER>gLLL<ENTER>mb1<ENTER>=B0+A1<ENTER>gLLLhJJk<ENTER>
+cmd table ma0<ENTER>=1<ENTER>gJJ<ENTER>sk<ENTER>gLLL<ENTER>mb1<ENTER>=B0+A1<ENTER>gLLLhJJk<ENTER>
 
 
 ecmd dragdown gJJJJ sk
