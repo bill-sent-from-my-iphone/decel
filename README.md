@@ -2,6 +2,8 @@
 
 ![Example Semo](https://github.com/bill-sent-from-my-iphone/decel/blob/main/assets/decel_demo.gif "Demo")
 
+## The spreadsheet software you never knew you didn't need!
+
 ### Basics
 
 This is a python based spreadsheet program made for use in the terminal. Designed with a familiarity with vim in mind.
