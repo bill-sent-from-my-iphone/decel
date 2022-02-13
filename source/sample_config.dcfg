@@ -18,6 +18,8 @@ cmd table ma0<ENTER>=1<ENTER>gJJ<ENTER>sk<ENTER>gLLL<ENTER>mb1<ENTER>=B0+A1<ENTE
 
 
 
+# Obviously typing "<ENTER>" often isn't fun so I made:
+#
 # 'ecmd' = Command <name> <sequence>
 #        - Same as above, but spaces will execute an <ENTER> instead of no-op
 #
@@ -25,7 +27,9 @@ cmd table ma0<ENTER>=1<ENTER>gJJ<ENTER>sk<ENTER>gLLL<ENTER>mb1<ENTER>=B0+A1<ENTE
 ecmd dragdown gJJJJ sk
 
 # Note that these can be called recursively
-# order of declaration does not matter as they are executed as keystrokes
+# multiple spaces will be registered as a single <ENTER> so you may need to still use it, as shown below
+#
+# This creates the fibonacci sequence going downwards
 
 ecmd fib =1 j=1 j=#kk +#k<ENTER> :dragdown
 
