@@ -58,6 +58,9 @@ def normalize_anchor(active, anchor):
         active, anchor = swap_horizontal(active, anchor, 1)
     return active, anchor
 
+def make_token(cell):
+    return colval(cell[1]) + str(cell[0])
+
 class SheetWindow(Window):
 
     I_TYPE_DISPLAY = "@"
@@ -86,6 +89,7 @@ class SheetWindow(Window):
         self.select_anchor = None
         self.grab_anchor = None
         self.active_cell = (0, 0)
+        self.finding_cell = False
         self.input_active = False
         self.yank_vals = {}
         self.teleporting = False
@@ -305,6 +309,9 @@ class SheetWindow(Window):
             selected = False
             if r == self.cursor[0] and column == self.cursor[1]:
                 selected = True
+                mod = self.colors.get_color_id('White', 'Red')
+            if self.finding_cell and r == self.active_cell[0] and column == self.active_cell[1]:
+                mod = self.colors.get_color_id('Magenta', 'Yellow')
             self.draw_cell_inner(value, R, offset + self.c_col,
                                  row_height, col_width, alignment='r', mod=mod, selected=selected)
 
@@ -695,22 +702,74 @@ class SheetWindow(Window):
     def start_teleport(self):
         self.teleporting = True
 
+    def start_secondary_select(self):
+        self.active_cell = self.cursor
+        self.finding_cell = True
+
+    def confirm_secondary_select(self):
+        if self.select_anchor:
+            anchor = self.select_anchor
+            cursor = self.cursor
+            cursor, anchor = swap_vertical(cursor, anchor, 1)
+            cursor, anchor = swap_horizontal(cursor, anchor, 1)
+            token = make_token(anchor) + ':' + make_token(cursor)
+        else:
+            token = make_token(self.cursor)
+        self.input.process_text(token)
+        self.end_secondary_select()
+
+    def cancel_secondary_select(self):
+        self.end_secondary_select()
+
+    def end_secondary_select(self):
+        self.cursor = self.active_cell
+        self.finding_cell = False
+        self.end_select()
+
+    def input_process_char(self, char):
+        if self.current_input_type == SheetWindow.I_TYPE_ENTRY:
+            if char == CTRL_F:
+                self.start_secondary_select()
+                return
+        self.input.process_char(char)
+
     def process_char(self, char):
         if self.wait_for_key:
             raise Exception(char)
         if char == ord('!'):
             self.wait_for_key = True
-        if self.input_active:
-            self.input.process_char(char)
+        if self.input_active and not self.finding_cell:
+            self.input_process_char(char)
         else:
-            if self.grabbing and char == ENTER:
-                self.end_grab()
-                self.draw_page()
-                return
-            if char == ord('='):
-                self.enter_cell_input()
-            if char == ord(':'):
-                self.enter_cmd_input()
+
+            if not self.finding_cell:
+
+                if self.grabbing and char == ENTER:
+                    self.end_grab()
+                    self.draw_page()
+                    return
+                if char == ord('='):
+                    self.enter_cell_input()
+                if char == ord(':'):
+                    self.enter_cmd_input()
+
+                if char == ord('g') and not self.grabbing:
+                    self.start_grab()
+
+                if char == ord('x'):
+                    self.clear_value()
+
+                if char == ord('y'):
+                    self.yank()
+                if char == ord('p'):
+                    self.paste()
+
+            if self.finding_cell:
+                if char == ENTER:
+                    self.confirm_secondary_select()
+                    self.draw_page()
+                    return
+
             if char == CTRL_J:
                 self.vertical_scroll(1)
             if char == CTRL_K:
@@ -726,32 +785,24 @@ class SheetWindow(Window):
         ## SELECTION ##
             if char == ord('v'):
                 self.start_select()
+
             if char == ESCAPE:
                 if self.select_anchor:
                     self.end_select()
+                elif self.finding_cell:
+                    self.cancel_secondary_select()
                 if self.current_motion:
                     self.current_motion = ''
                 if self.grabbing:
                     self.grabbing = False
 
-            if char == ord('g') and not self.grabbing:
-                self.start_grab()
-
             if char == ord('>'):
                 self.change_column_size()
             if char == ord('<'):
                 self.change_column_size(negative=True)
-
-            if char == ord('x'):
-                self.clear_value()
-
-            if char == ord('y'):
-                self.yank()
-            if char == ord('p'):
-                self.paste()
-
             if char == ord('R'):
                 self.force_refresh()
+
 
         ## MOVEMENT ##
             if char == ord('s'):

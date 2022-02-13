@@ -22,6 +22,10 @@ class BasicInput:
         self.text = ''
         self.cursor = 0
 
+    def process_text(self, text):
+        for c in text:
+            self.process_char(ord(c))
+
     def process_char(self, charval):
         inp = self.text
         pos = self.cursor
