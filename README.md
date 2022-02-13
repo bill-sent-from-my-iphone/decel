@@ -20,6 +20,23 @@ This is a python based spreadsheet program made for use in the terminal. Designe
 - Repeat Commands
 - Undo / Redo functionality
 
+
+### Configuration
+
+
+##### Environment Vars
+
+- `DECEL_SCRIPT_DIR` - Decel will load python scripts in this path on startup
+- `DECEL_CONFIG_FILE` - Configuration file where user can customize experience
+
+##### Configuration File
+
+Frankly there isn't much to configure yet, but that should hopefully change.
+
+- `col_width` - (Int) Default column width (default 7)
+- `row_jump` - (Int) Size of jump for `Shift+(j/k)` (default 5)
+- `col_jump` - (Int) Size of jump for `Shift+(h/l)` (default 3)
+
 ### Commands
 
 Key | Action
@@ -39,12 +56,9 @@ Key | Action
 `>` | Increase Column Size
 `<` | Decrease Column Size
 `=` | Enter Value or Function into cell (`Enter` to confirm)
+`:` | Enter Command Mode
 `enter` | Confirm Grabbed Cells
 `esc` | Cancel
-`:` | Enter Command Mode
-
-
-
 
 
 
