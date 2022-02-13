@@ -21,6 +21,7 @@ class MainWindow(Window):
         rows, columns = self.size()
         self.stdscr = curses.newwin(rows, columns, 0, 0)
         self.stdscr.keypad(True)
+        self.cursor = (0, 0)
         super().__init__(0, 0, rows, columns, colors=self.colors)
         self.create_sheet()
         self.active_window = None
@@ -62,10 +63,14 @@ class MainWindow(Window):
     def set_active(self, window):
         self.active_window = window
 
+    def set_cursor(self, row, col):
+        self.cursor = (row, col)
+
     def loop(self):
         while True:
             self.refresh(self.stdscr)
             self.stdscr.refresh()
+            self.stdscr.move(*self.cursor)
             ch = self.stdscr.getch()
             self.get_active_window().process_char(ch)
 

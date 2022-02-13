@@ -161,3 +161,6 @@ class Window:
     def set_active(self, window):
         self.parent.set_active(window)
 
+    def set_cursor(self, row, col):
+        self.parent.set_cursor(row, col)
+

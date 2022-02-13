@@ -357,6 +357,12 @@ class SheetWindow(Window):
             text_to_draw += self.get_input()
             if len(text_to_draw) > self.c_width - 2:
                 text_to_draw = beginning + ".." + self.get_input()[-(self.c_width-7):]
+
+        row = input_line
+        col = self.c_col + 4 + self.input.cursor
+        ind = self.get_scr_indices(row, col)
+        self.set_cursor(*ind)
+
         self.draw_text(text_to_draw, input_line, self.c_row + 1, self.entry_color)
 
     def prerefresh(self):
