@@ -786,8 +786,8 @@ class SheetWindow(Window):
             if char == CTRL_H:
                 self.horizontal_scroll(-1)
 
-            if chr(char) in '0123456789':
-                self.current_motion += chr(char)
+            if chr(char % 256) in '0123456789':
+                self.current_motion += chr(char % 256)
 
         ## SELECTION ##
             if char == ord('v'):

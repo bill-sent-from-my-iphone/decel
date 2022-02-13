@@ -72,6 +72,9 @@ class MainWindow(Window):
             self.stdscr.refresh()
             self.stdscr.move(*self.cursor)
             ch = self.stdscr.getch()
-            self.get_active_window().process_char(ch)
+            if ch == curses.KEY_RESIZE:
+                continue
+            else:
+                self.get_active_window().process_char(ch)
 
 
