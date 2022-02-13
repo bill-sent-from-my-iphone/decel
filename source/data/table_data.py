@@ -102,6 +102,9 @@ class TableData:
             return col in self.formulae[row]
         return False
 
+    def add_table_table(self, new_table):
+        pass
+
     def update_value(self, row, col):
         if self._has_formula(row, col):
             val = self.formulae[row][col].get_value()
