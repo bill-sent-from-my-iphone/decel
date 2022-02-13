@@ -61,7 +61,7 @@ Key | Action
 `:` | Enter Command Mode
 `enter` | Confirm Grabbed Cells
 `esc` | Cancel
-
+`#` | (While in `=` entry) Exit entry to find cell (or range) with cursor
 
 
 
