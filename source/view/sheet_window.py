@@ -1,6 +1,7 @@
 import curses
 import numpy as np
 import pandas as pd
+import copy
 import re
 
 from .utils.input import BasicInput
@@ -100,6 +101,8 @@ class SheetWindow(Window):
         self.grabbing = False
         self.current_motion = ''
 
+        self.commands = {}
+
         self.last_column = 0
         self.num_viewable_columns = 0
         self.row_jump_size = 5
@@ -116,6 +119,7 @@ class SheetWindow(Window):
         self.default_col_width = config.default_column_width()
         self.row_jump_size = config.row_jump_size()
         self.col_jump_size = config.col_jump_size()
+        self.commands = config.get_commands()
         self.draw_page()
 
     def set_input_active(self, input_type):
@@ -520,6 +524,7 @@ class SheetWindow(Window):
         inp = self.get_input()
         if inp == 'w':
             self.try_save_file()
+        self.start_command(inp)
 
     def save_file(self):
         fname = self.table.filename()
@@ -634,6 +639,12 @@ class SheetWindow(Window):
 
     def start_select(self):
         self.select_anchor = self.cursor
+
+    def start_command(self, cmd):
+        command = self.commands.get(cmd, None)
+        if command:
+            for k in command:
+                self.process_char(k)
 
     def get_yank_value(self, r, c):
         '''
