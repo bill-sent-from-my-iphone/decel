@@ -12,6 +12,10 @@ col_width 10
 #       - Creates a command that can be called with ":<name>" in the app which will execute the key sequence specified
 #       - Special chars: <ENTER> <SPACE>
 #
+#       Commands are processed in decel as a sequence of keystrokes.
+#           Scrolling down 5 rows can be done with the keystrokes '5j'
+#           Similarly, you can create a command "cmd scrolldown 5j"
+#
 # This creates pascals triangle at the top left
 
 cmd table ma0<ENTER>=1<ENTER>gJJ<ENTER>sk<ENTER>gLLL<ENTER>mb1<ENTER>=B0+A1<ENTER>gLLLhJJk<ENTER>
@@ -23,6 +27,7 @@ cmd table ma0<ENTER>=1<ENTER>gJJ<ENTER>sk<ENTER>gLLL<ENTER>mb1<ENTER>=B0+A1<ENTE
 # 'ecmd' = Command <name> <sequence>
 #        - Same as above, but spaces will execute an <ENTER> instead of no-op
 #
+# `g` initiates the drag, J(4) pulls it downwards and `sk` returns the cursor to the top
 
 ecmd dragdown gJJJJ sk
 
