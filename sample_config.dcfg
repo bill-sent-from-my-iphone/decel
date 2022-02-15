@@ -33,7 +33,14 @@ ecmd dragdown gJJJJ sk
 
 ecmd fib =1 j=1 j=#kk +#k<ENTER> :dragdown
 
+
+
+# This is an example of calling a python function aliased by a command
+# `tick` is an included stock ticker function
+#
+# Arguments can be used like ~1, ~2, etc
+#
+# This could be used like ":t AAPL" in the app
 ecmd t =tick("~1")
 
-ecmd aa :t<SPACE>AAPL
 
