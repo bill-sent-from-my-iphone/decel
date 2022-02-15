@@ -561,6 +561,7 @@ class SheetWindow(Window):
         sr, sc = start
         dr, dc = dest
         form = self.table.get_formula(sr, sc)
+        self.clear_cell_inner(*dest)
         if form:
             formula = form.make_child(dest)
             self.table.add_formula(dr, dc, formula)
