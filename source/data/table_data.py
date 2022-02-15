@@ -6,8 +6,18 @@ import csv
 from .script_loader import get_loader
 from .formula import Formula, colval, has_tokens
 from .dependency_tree import DependencyNode, DependencyTree
+from .stocks import tick
 
 unnamed_col = r'Unnamed: [0-9]+'
+
+global defaults
+defaults = {}
+
+def add_func(f):
+    name = f.__name__
+    defaults[name] = f
+
+add_func(tick)
 
 def read_token(token):
     row_lock = False
@@ -164,8 +174,38 @@ class TableData:
             self.make_formula(r, col, val)
         else:
             try:
-                local_vars = get_loader().get_vars()
+                local_vars = defaults
+                local_vars.update(get_loader().get_vars())
                 value = eval(val, {}, local_vars)
+                if isinstance(value, pd.DataFrame):
+                    cols = value.columns
+                    rowind = 0
+                    has_index = False
+                    for ind, row in value.iterrows():
+                        rowind += 1
+                        nrow = r + rowind
+                        colrange = len(cols)
+
+                        start_col_offset = 0
+
+                        if has_index or not isinstance(ind, int):
+                            has_index = True
+                            self.set_value(nrow, colval(c), ind)
+                            start_col_offset = 1
+                        else:
+                            rowind = ind
+
+                        for i in range(len(cols)):
+                            col_ = cols[i]
+                            val = row[col_]
+                            ncol = colval(c + i + start_col_offset)
+                            self.set_value(nrow, ncol, val)
+
+                    for i in range(len(cols)):
+                        ncol = colval(c + i + start_col_offset)
+                        self.set_value(r, ncol, cols[i])
+
+                    return
                 try:
                     v = float(value)
                     self.set_value(r, col, v)
