@@ -75,7 +75,6 @@ class SheetWindow(Window):
         if 'table' in kwargs:
             del kwargs['table']
         super().__init__(*args, **kwargs)
-        #self.table.load_csv('example_file.csv')
         self.column_widths = {}
         self.row_heights = {}
         self.draw_border(title='Decel')
@@ -116,6 +115,9 @@ class SheetWindow(Window):
         self.draw_page()
         ## DEBUG
         self.wait_for_key = False
+
+    def load_file(self, filename):
+        self.table.load_file(filename)
 
     def force_refresh(self):
         self.table.force_update()
@@ -542,8 +544,8 @@ class SheetWindow(Window):
 
     def save_file(self):
         fname = self.table.filename()
+        self.table.save()
         try:
-            self.table.save()
             self.set_tmp_message('Saved file: {}'.format(fname))
         except:
             self.set_tmp_message('Error saving file: {}'.format(fname))

@@ -14,6 +14,8 @@ def letter_val(char):
 def char_val(intval):
     return chr(intval + 64)
 
+
+
 letter_re = r'[A-Z]+'
 def split_token(token):
     col = re.match(letter_re, token).group()
@@ -99,7 +101,7 @@ class Formula:
         return output
 
     def make_child(self, cell):
-        child = ChildFormula(self, cell)
+        child = ChildFormula(self.root(), cell)
         return child
 
     def get_display_formula(self):

@@ -2,9 +2,10 @@ import re
 import os
 import pandas as pd;
 import csv
+import json
 
 from .script_loader import get_loader
-from .formula import Formula, colval, has_tokens
+from .formula import Formula, colval, has_tokens, colint
 from .dependency_tree import DependencyNode, DependencyTree
 from .stocks import tick
 
@@ -31,7 +32,7 @@ def read_token(token):
 
     col_re = r'[A-Z]+'
     m = re.search(col_re, token)
-    col = get_col(m.group(0))
+    col = colint(m.group(0))
 
     row_re = r'[0-9]+'
     m = re.search(row_re, token)
@@ -155,6 +156,7 @@ class TableData:
     def make_formula(self, row, col, formula):
         new_formula = Formula((row, col), formula, self)
         self.add_formula(row, col, new_formula)
+        return new_formula
 
     def add_formula(self, row, col, new_formula):
         if row not in self.formulae:
@@ -219,11 +221,50 @@ class TableData:
         self.data.at[row, col] = value
         self.token_changed((row, col))
 
+    def load_file(self, filepath):
+        if filepath.endswith('.dc'):
+            self.load_dc(filepath)
+            return
+        if filepath.endswith('.csv'):
+            self.load_csv(filepath)
+            return
+        raise Exception('Invalid Filetype')
+
+    def load_dc(self, filepath):
+        with open(filepath, 'r') as f:
+            content = json.load(f)
+        decel_data = content['decel']
+
+        formulae = decel_data['formulae']
+        csv_data = decel_data['csv']
+
+        tmp_csv = os.path.join(os.getcwd(), 'tmp_csv.csv')
+        with open(tmp_csv, 'w+') as f:
+            f.write(csv_data)
+
+        self.load_csv(tmp_csv)
+
+        for f in formulae:
+            formula_data = formulae[f]
+            r, _, c, _ = read_token(f)
+            cell = (r, c)
+            formula = formula_data['formula']
+            t_data = [read_token(t) for t in formula_data['children'].split(',')]
+            children = [(t[0], t[2]) for t in t_data]
+            
+            base = self.make_formula(r, colval(c), formula)
+            for cr, cc in children:
+                child_formula = base.make_child((cr, colval(cc)))
+                self.add_formula(cr, colval(cc), child_formula)
+
+        #os.remove(tmp_csv)
+        self.set_filename(filepath)
+
     def load_csv(self, filepath):
         body = []
 
         new_df = pd.DataFrame()
-        csv_df = pd.read_csv(filepath)
+        csv_df = pd.read_csv(filepath, header=None)
         p_cols = csv_df.columns
 
         self.clear_data()
@@ -232,18 +273,13 @@ class TableData:
             csv_col = p_cols[i]
             col_name = colval(i)
 
-            csv_col_name = csv_col
-            if re.match(unnamed_col, csv_col_name):
-                csv_col_name = ''
-            new_df.at[0, col_name] = csv_col_name
             for r in range(len(csv_df)):
                 raw_val = csv_df.at[r, csv_col]
                 if pd.isna(raw_val):
-                    self.set_value(r+1, i, None)
-                    #self.set_string_value(r+1, i, "")
+                    self.set_value(r, i, None)
                 else:
                     v = str(raw_val).strip(' ')
-                    self.set_string_value(r+1, i, v)
+                    self.set_string_value(r, i, v)
 
         self.set_filename(filepath)
 
@@ -262,9 +298,84 @@ class TableData:
             raise Exception('No file specified')
         if fname.endswith('.csv'):
             self.save_csv(fname)
+        if fname.endswith('.dc'):
+            self.save_dc(fname)
 
     def save_csv(self, filepath):
         if not filepath:
             filepath = self.current_file
         self.data.to_csv(filepath, header=None, index=None)
+
+    def iter_formulae(self):
+        for r in self.formulae:
+            row = self.formulae[r]
+            for c in row:
+                formula = row[c]
+                yield (r,c), formula
+        pass
+
+    def cell_str(self, cell):
+        return '{}{}'.format(cell[1], cell[0])
+
+    def make_formula_dict(self, formula):
+        return {
+                 'location' : self.cell_str(formula.position),
+                 'formula' : formula.get_display_formula(),
+                 'children' : []
+               }
+
+    def get_formula_jsondata(self):
+        root_formulae = {}
+        children = {}
+        for cell, formula in self.iter_formulae():
+            parent = formula.root()
+            ppos = parent.position
+            if ppos not in root_formulae:
+                root_formulae[ppos] = self.make_formula_dict(parent)
+
+            if ppos not in children:
+                children[ppos] = [cell]
+            else:
+                children[ppos].append(cell)
+
+        for f in root_formulae:
+            # Need to turn this into a range or something. String gets too big
+            fdata = root_formulae[f]
+            child_cells = children[f]
+            childstring = ','.join([self.cell_str(cell) for cell in child_cells])
+            fdata['children'] = childstring
+
+        output = {}
+
+        for f in root_formulae:
+            output[self.cell_str(f)] = root_formulae[f]
+
+        return output
+
+    def save_dc(self, filepath):
+        output_data = {}
+        decel_data = {}
+
+        formula_data = self.get_formula_jsondata()
+        decel_data['formulae'] = formula_data
+
+        current = os.getcwd()
+        tmp_csv = os.path.join(current, 'tmp_csv.csv')
+
+        self.save_csv(tmp_csv)
+        with open(tmp_csv) as f:
+            content = f.read()
+            decel_data['csv'] = content
+        os.remove(tmp_csv)
+
+        output_data['decel'] = decel_data
+
+        dest_path = filepath
+        if not os.path.exists(filepath):
+            dest_path = os.path.join(current, filepath)
+
+        with open(dest_path, 'w+') as f:
+            json.dump(output_data, f)
+
+
 

@@ -1,3 +1,4 @@
+import sys
 import pandas as pd
 
 from data.table_data import TableData
@@ -5,10 +6,11 @@ from view.sheet_window import SheetWindow
 from view.mainwindow import MainWindow
 from view.popup import Popup
 
-def main():
-    m = MainWindow()
+def main(args):
+    m = MainWindow(args)
     m.loop()
 
 if __name__ == '__main__':
-    main()
+    args = sys.argv[1:]
+    main(args)
 

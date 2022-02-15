@@ -10,7 +10,7 @@ from configfile import DecelConfig
 
 class MainWindow(Window):
 
-    def __init__(self):
+    def __init__(self, args):
         self.stdscr = None
         self.refresh_data = pd.DataFrame(dtype=bool)
         self.scr = curses.initscr()
@@ -27,6 +27,10 @@ class MainWindow(Window):
         self.active_window = None
         self.config = self.get_config()
         self.sheet.load_config(self.config)
+
+        if args:
+            filename = args[0]
+            self.sheet.load_file(filename)
 
     def get_config(self):
         cfg = DecelConfig()
