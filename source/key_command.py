@@ -43,5 +43,7 @@ def decode_command(values, enter_after, args):
 
         if enter_after:
             output.append(ENTER)
+        else:
+            output.append(SPACE)
     return output
 

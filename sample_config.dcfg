@@ -16,6 +16,8 @@ col_width 10
 #           Scrolling down 5 rows can be done with the keystrokes '5j'
 #           Similarly, you can create a command "cmd scrolldown 5j"
 #
+#       NOTE: Multiple spaces in a row will not register as multiple <SPACE> or <ENTER>
+#
 # This creates pascals triangle at the top left
 
 cmd table ma0<ENTER>=1<ENTER>gJJ<ENTER>sk<ENTER>gLLL<ENTER>mb1<ENTER>=B0+A1<ENTER>gLLLhJJk<ENTER>
@@ -47,5 +49,18 @@ ecmd fib =1 j=1 j=#kk +#k<ENTER> :dragdown
 #
 # This could be used like ":t AAPL" in the app
 ecmd t =tick("~1")
+
+# Similar to commands (cmd), you can create keycommands with similar syntax
+#
+# The difference is keycmds can be called with a fewer keystrokes.
+# With commands, the user needs to type ':' to enter the view, then the command, then press enter to confirm it
+#
+# With keycmds, the user can type '@', then the single key indicated by the command
+#
+
+keycmd 3 :t AAPL<ENTER>
+ekeycmd f :fib
+
+
 
 

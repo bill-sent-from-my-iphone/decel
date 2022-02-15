@@ -93,6 +93,7 @@ class SheetWindow(Window):
         self.input_active = False
         self.yank_vals = {}
         self.teleporting = False
+        self.awaiting_key_cmd = False
 
         self.input = BasicInput(on_confirm=self.confirm_input, on_cancel=self.cancel_input)
         self.tmp_message = ''
@@ -664,8 +665,11 @@ class SheetWindow(Window):
         command = self.config.get_command(cmd, args)
         if command:
             self.close_input()
-            for k in command:
-                self.process_char(k)
+            self.execute_command_sequence(command)
+
+    def execute_command_sequence(self, sequence):
+        for k in sequence:
+            self.process_char(k)
 
     def get_yank_value(self, r, c):
         '''
@@ -747,6 +751,11 @@ class SheetWindow(Window):
                 return
         self.input.process_char(char)
 
+    def try_key_command(self, key):
+        sequence = self.config.get_key_command(key)
+        if sequence:
+            self.execute_command_sequence(sequence)
+
     def process_char(self, char):
         if self.wait_for_key:
             raise Exception(char)
@@ -755,6 +764,9 @@ class SheetWindow(Window):
         if self.input_active and not self.finding_cell:
             self.input_process_char(char)
         else:
+            if self.awaiting_key_cmd:
+                self.awaiting_key_cmd = False
+                self.try_key_command(chr(char))
 
             if not self.finding_cell:
 
@@ -777,6 +789,9 @@ class SheetWindow(Window):
                     self.yank()
                 if char == ord('p'):
                     self.paste()
+
+            if char == ord(','):
+                self.awaiting_key_cmd = True
 
             if self.finding_cell:
                 if char == ENTER:

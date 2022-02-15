@@ -46,6 +46,7 @@ class DecelConfig(ConfigFile):
 
     def __init__(self):
         self.commands = {}
+        self.key_commands = {}
         super().__init__('~/.decel_config.dcfg', 'DECEL_CONFIG_FILE')
 
     def _register_token(self, token, value):
@@ -53,15 +54,30 @@ class DecelConfig(ConfigFile):
         if m:
             enter = m.group(1) == 'e'
             self.add_command(value, final_enter=enter)
+            return
+        m = re.match(r'(e)?keycmd', token)
+        if m:
+            enter = m.group(1) == 'e'
+            self.add_key_command(value, final_enter=enter)
         else:
             super()._register_token(token, value)
 
         self.data[token] = value
 
+    def add_key_command(self, values, final_enter=False):
+        name = values[0]
+        commands = values[1:]
+        self.key_commands[name] = (final_enter, commands)
+
     def add_command(self, values, final_enter=False):
         name = values[0]
         commands = values[1:]
         self.commands[name] = (final_enter, commands)
+
+    def get_key_command(self, key):
+        final_enter, cmds = self.key_commands.get(key, (None, None))
+        if cmds:
+            return decode_command(cmds, final_enter, [])
 
     def get_command(self, command, args):
         final_enter, cmds = self.commands.get(command, (None, None))
