@@ -567,6 +567,10 @@ class SheetWindow(Window):
             v = self.table.get_cell_value(sc, sr)
             self.table.set_value(dr, dc, v)
 
+    def clear_cell_inner(self, row, col):
+        self.table.remove_formula(row, col)
+        self.table.set_value(row, col, None)
+
     def clear_value(self):
         if self.select_anchor:
             r1, c1 = self.cursor
@@ -579,11 +583,11 @@ class SheetWindow(Window):
             cM = max(cols)
             for r in range(rm, rM+1):
                 for c in range(cm, cM+1):
-                    self.table.set_value(r, colval(c), None)
+                    self.clear_cell_inner(r, colval(c))
             self.end_select()
         else:
             r, c = self.cursor
-            self.table.set_value(r, colval(c), None)
+            self.clear_cell_inner(r, colval(c))
 
     # Grab and drag values to easily expand formulae
     def start_grab(self):
