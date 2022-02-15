@@ -105,7 +105,7 @@ class SheetWindow(Window):
         self.grabbing = False
         self.current_motion = ''
 
-        self.commands = {}
+        self.config = None
 
         self.last_column = 0
         self.num_viewable_columns = 0
@@ -123,7 +123,7 @@ class SheetWindow(Window):
         self.default_col_width = config.default_column_width()
         self.row_jump_size = config.row_jump_size()
         self.col_jump_size = config.col_jump_size()
-        self.commands = config.get_commands()
+        self.config = config
         self.draw_page()
 
     def set_input_active(self, input_type):
@@ -653,8 +653,11 @@ class SheetWindow(Window):
     def start_select(self):
         self.select_anchor = self.cursor
 
-    def start_command(self, cmd):
-        command = self.commands.get(cmd, None)
+    def start_command(self, full_command):
+        vals = full_command.split(' ')
+        cmd = vals[0]
+        args = vals[1:]
+        command = self.config.get_command(cmd, args)
         if command:
             self.close_input()
             for k in command:

@@ -1,4 +1,5 @@
 import os
+import re
 from key_command import decode_command
 
 class ConfigFile:
@@ -48,10 +49,10 @@ class DecelConfig(ConfigFile):
         super().__init__('~/.decel_config.dcfg', 'DECEL_CONFIG_FILE')
 
     def _register_token(self, token, value):
-        if token == 'cmd':
-            self.add_command(value)
-        if token == 'ecmd':
-            self.add_command(value, final_enter=True)
+        m = re.match(r'(e)?cmd', token)
+        if m:
+            enter = m.group(1) == 'e'
+            self.add_command(value, final_enter=enter)
         else:
             super()._register_token(token, value)
 
@@ -60,11 +61,12 @@ class DecelConfig(ConfigFile):
     def add_command(self, values, final_enter=False):
         name = values[0]
         commands = values[1:]
-        key_sequence = decode_command(values, final_enter)
-        self.commands[name] = key_sequence
+        self.commands[name] = (final_enter, commands)
 
-    def get_commands(self):
-        return self.commands
+    def get_command(self, command, args):
+        final_enter, cmds = self.commands.get(command, (None, None))
+        if cmds:
+            return decode_command(cmds, final_enter, args)
 
     def default_column_width(self):
         return self.get_val('col_width', action=int, default=7)

@@ -33,5 +33,7 @@ ecmd dragdown gJJJJ sk
 
 ecmd fib =1 j=1 j=#kk +#k<ENTER> :dragdown
 
+ecmd t =tick("~1")
 
-ecmd aa =tick("AAPL")
+ecmd aa :t<SPACE>AAPL
+
