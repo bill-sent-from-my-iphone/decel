@@ -129,7 +129,8 @@ class TableData:
 
     def remove_formula(self, row, col):
         if row in self.formulae:
-            del self.formulae[row][col]
+            if col in self.formulae[row]:
+                del self.formulae[row][col]
 
     def add_dependency(self, lead_token, dependent_token):
         if lead_token not in self.dependencies:
