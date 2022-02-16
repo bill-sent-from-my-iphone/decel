@@ -31,6 +31,7 @@ class MainWindow(Window):
         if args:
             filename = args[0]
             self.sheet.load_file(filename)
+            self.sheet.draw_page()
 
     def get_config(self):
         cfg = DecelConfig()
