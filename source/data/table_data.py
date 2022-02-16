@@ -222,6 +222,9 @@ class TableData:
         self.token_changed((row, col))
 
     def load_file(self, filepath):
+        if not os.path.exists(filepath):
+            self.set_filename(filepath)
+            return
         if filepath.endswith('.dc'):
             self.load_dc(filepath)
             return
