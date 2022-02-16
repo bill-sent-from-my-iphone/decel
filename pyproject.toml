@@ -20,4 +20,4 @@ packages = [
 
 
 [tool.poetry.scripts]
-decel = "source.main:main"
+run = "source.main:main"
