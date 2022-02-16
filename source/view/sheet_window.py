@@ -337,9 +337,9 @@ class SheetWindow(Window):
         v = self.table.get_cell_value(colval(c), r)
         if v is None:
             return ""
+        if pd.isnull(v):
+            return ""
         if isinstance(v, float):
-            if pd.isna(v):
-                return ""
             out = str(v)
             out = out.rstrip('0').rstrip('.')
             return out + " (float)"

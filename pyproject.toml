@@ -1,23 +1,18 @@
-[build-system]
-name = "decel"
-# Minimum requirements for the build system to execute.
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
-
-
 [tool.poetry]
 name = "decel"
-authors = [
-    "Jim Blim <fake_email@nice_try.net>"
-    ]
-version = "0.0.1"
-description = "Simple python-based spreadsheet manager"
+version = "0.1.0"
+description = "A simple terminal spreadsheet editor"
+authors = ["Decel <decel69@protonmail.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.9"
+
+[tool.poetry.dev-dependencies]
+requests = "^2.27.1"
+pandas = "^1.4.0"
+yfinance = "^0.1.70"
 
 
-packages = [
- { include = "source" },
-]
-
-
-[tool.poetry.scripts]
-run = "source.main:main"
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"

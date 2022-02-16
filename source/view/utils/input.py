@@ -46,6 +46,8 @@ class BasicInput:
         elif charval == BACKSPACE:
             pre_cursor = pre_cursor[:-1]
             self.cursor -= 1
+            if self.cursor < 0:
+                self.cursor = 0
             self.text = pre_cursor + post_cursor
         elif charval == ENTER:
             self.confirm()

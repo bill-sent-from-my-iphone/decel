@@ -8,7 +8,6 @@ from view.popup import Popup
 
 def main():
     args = sys.argv[1:]
-    main(args)
     m = MainWindow(args)
     m.loop()
 
