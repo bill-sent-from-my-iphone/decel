@@ -3,6 +3,10 @@ name = "decel"
 version = "0.1.0"
 description = "A simple terminal spreadsheet editor"
 authors = ["Decel <decel69@protonmail.com>"]
+packages = [
+    { include = "source" },
+    ]
+
 
 [tool.poetry.dependencies]
 python = "^3.9"

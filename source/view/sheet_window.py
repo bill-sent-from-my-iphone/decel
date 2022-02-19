@@ -157,6 +157,13 @@ class SheetWindow(Window):
             return self.row_heights[row]
         return self.default_row_height
 
+    def insert_row(self, row, above=False):
+        size = self.get_motion_size()
+        if row > -1:
+            self.table.insert_row(row, num_rows=size)
+            if not above:
+                self.cursor = (self.cursor[0] + 1, self.cursor[1])
+
     def change_column_size(self, size=None, col=None, negative=False):
         if not col:
             col_start = self.cursor[1]
@@ -772,6 +779,10 @@ class SheetWindow(Window):
                 self.try_key_command(chr(char))
 
             if not self.finding_cell:
+                if char == ord('O'):
+                    self.insert_row(self.cursor[0], above=True)
+                if char == ord('o'):
+                    self.insert_row(self.cursor[0] + 1)
 
                 if self.grabbing and char == ENTER:
                     self.end_grab()
@@ -834,7 +845,6 @@ class SheetWindow(Window):
                 self.change_column_size(negative=True)
             if char == ord('R'):
                 self.force_refresh()
-
 
         ## MOVEMENT ##
             if char == ord('s'):

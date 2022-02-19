@@ -1,5 +1,6 @@
 import re
 import os
+import numpy as np
 import pandas as pd;
 import csv
 import json
@@ -115,13 +116,30 @@ class TableData:
             return self.formulae[row][col]
         return None
 
+    def insert_row(self, row_ind, num_rows=3):
+        f_rows = sorted(self.formulae.keys(), reverse=True)
+
+        for f_row in f_rows:
+            if f_row >= row_ind:
+                self.formulae[f_row + num_rows] = self.formulae[f_row]
+
+        tmp_rows = {}
+        for index, row in self.data.iterrows():
+            if index >= row_ind:
+                tmp_rows[index] = row
+
+        start_rows = self.data.iloc[0:row_ind]
+        end_rows = self.data.iloc[row_ind:]
+
+        range_ind = pd.RangeIndex(start=row_ind, stop=row_ind+num_rows)
+        empty_rows = pd.DataFrame(np.nan, index=range_ind, columns=self.data.columns)
+
+        self.data = pd.concat([start_rows, empty_rows, end_rows], ignore_index=True)
+
     def _has_formula(self, row, col):
         if row in self.formulae:
             return col in self.formulae[row]
         return False
-
-    def add_table_table(self, new_table):
-        pass
 
     def update_value(self, row, col):
         if self._has_formula(row, col):

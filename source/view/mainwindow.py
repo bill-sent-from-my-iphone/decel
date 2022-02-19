@@ -72,14 +72,18 @@ class MainWindow(Window):
         self.cursor = (row, col)
 
     def loop(self):
-        while True:
-            self.refresh(self.stdscr)
-            self.stdscr.refresh()
-            self.stdscr.move(*self.cursor)
-            ch = self.stdscr.getch()
-            if ch == curses.KEY_RESIZE:
-                continue
-            else:
-                self.get_active_window().process_char(ch)
+        try:
+            while True:
+                self.refresh(self.stdscr)
+                self.stdscr.refresh()
+                self.stdscr.move(*self.cursor)
+                ch = self.stdscr.getch()
+                if ch == curses.KEY_RESIZE:
+                    continue
+                else:
+                    self.get_active_window().process_char(ch)
+        except Exception as e:
+            self.terminate()
+            raise e
 
 
